@@ -5,20 +5,5 @@ services:
     buildCommand: ./mvnw clean package -DskipTests
     startCommand: java -jar target/makotodecor-0.0.1-SNAPSHOT.jar
     plan: free
-    envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: production
-      - key: SPRING_DATASOURCE_URL
-        value: jdbc:h2:mem:testdb
-      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-        value: org.h2.Driver
-      - key: SPRING_DATASOURCE_USERNAME
-        value: sa
-      - key: SPRING_DATASOURCE_PASSWORD
-        value: password
-      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
-        value: create-drop
-      - key: SPRING_JPA_SHOW_SQL
-        value: false
-      - key: SPRING_H2_CONSOLE_ENABLED
-        value: false
+    # Environment variables are configured in Render Dashboard
+    # Do not put sensitive data here!

@@ -1,0 +1,944 @@
+openapi: 3.0.0
+servers:
+  - url: ''
+info:
+  description: The api for makotodecor backend service.
+  version: 1.0.0
+  title: Swagger Makotodecor
+  termsOfService: 'http://swagger.io/terms/'
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: productService
+    description: productService
+  - name: authService
+    description: Authentication service
+  - name: fileUploadService
+    description: File upload service
+  - name: imgTypeService
+    description: Image type service
+paths:
+  /v1/api/auth/register:
+    post:
+      tags:
+        - authService
+      operationId: register
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/auth/login:
+    post:
+      tags:
+        - authService
+      operationId: login
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/auth/refresh:
+    post:
+      tags:
+        - authService
+      operationId: refreshToken
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/auth/change-password:
+    post:
+      tags:
+        - authService
+      operationId: changePassword
+      summary: Change user password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                example: 'Password changed successfully'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/products:
+    get:
+      tags:
+        - productService
+      operationId: getProductsPaged
+      summary: Get products paged
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/orderBy'
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products paged retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductsPagedResponse'
+        '400':
+          description: Bad Request when missing necessary parameters
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - productService
+      operationId: createProduct
+      summary: Create new product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/products/{productId}:
+    get:
+      tags:
+        - productService
+      operationId: getProduct
+      summary: Get product by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          description: ID of product
+          example: 1
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '404':
+          description: Product not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - productService
+      operationId: updateProduct
+      summary: Update existing product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Product ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/files/upload:
+    post:
+      tags:
+        - fileUploadService
+      operationId: uploadImage
+      summary: Upload file to Cloudinary
+      description: Upload a single file and return the URL from Cloudinary
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file to upload
+                folder:
+                  type: string
+                  description: Optional folder name in Cloudinary (e.g., "products", "colors")
+                  example: 'products'
+              required:
+                - file
+      responses:
+        '200':
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageUploadResponse'
+        '400':
+          description: Bad Request - Invalid file or missing file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/files/upload/multiple:
+    post:
+      tags:
+        - fileUploadService
+      operationId: uploadMultipleImages
+      summary: Upload multiple files to Cloudinary
+      description: Upload multiple files and return their URLs from Cloudinary
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image files to upload
+                folder:
+                  type: string
+                  description: Optional folder name in Cloudinary
+                  example: 'products'
+              required:
+                - files
+      responses:
+        '200':
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultipleImageUploadResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ImgType endpoints
+  /v1/api/img-types:
+    get:
+      tags:
+        - imgTypeService
+      operationId: getAllImgTypes
+      summary: Get all image types
+      description: Retrieve all available image types for product images
+      responses:
+        '200':
+          description: Image types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImgTypeResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    # DTO
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: The username of the user
+        password:
+          type: string
+          description: The password of the user
+        name:
+          type: string
+          description: The full name of the user
+        email:
+          type: string
+          format: email
+          description: The email of the user
+        phone:
+          type: string
+          description: The phone number of the user
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: The username of the user
+        password:
+          type: string
+          description: The password of the user
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token
+
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          description: Current user password
+          example: 'currentPass123'
+        newPassword:
+          type: string
+          description: New password to set
+          example: 'newSecurePass456'
+        confirmPassword:
+          type: string
+          description: Confirmation of new password (must match newPassword)
+          example: 'newSecurePass456'
+
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The JWT access token
+        refreshToken:
+          type: string
+          description: The refresh token
+        expiresAt:
+          type: string
+          format: date-time
+          description: The expiration time of the access token
+
+    ProductsPagedResponse:
+      type: object
+      properties:
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductItemResponse'
+    ProductItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: The id of the product.
+        name:
+          type: string
+          description: The name of the product.
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        discount:
+          type: integer
+          format: int64
+        sold:
+          type: integer
+          format: int64
+        category:
+          $ref: '#/components/schemas/CategoryItemResponse'
+        img:
+          type: string
+          description: The image URL of the product.
+        updatedAt:
+          type: string
+          format: date-time
+          description: The updated at of the product.
+
+    CategoryItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: The id of the category.
+        code:
+          type: string
+          description: The code of the category.
+        name:
+          type: string
+          description: The name of the category.
+
+    # Base
+    PageInfo:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+          description: The total number of items.
+        totalPages:
+          type: integer
+          description: The total number of pages.
+        currentPage:
+          type: integer
+          description: The current page number.
+        pageSize:
+          type: integer
+          description: The number of items per page.
+        isFirst:
+          type: boolean
+          description: Whether the current page is the first page.
+        isLast:
+          type: boolean
+          description: Whether the current page is the last page.
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    # ImgType Response
+    ImgTypeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ImgType ID
+          example: 1
+        name:
+          type: string
+          description: Display name of the image type
+          example: 'Mặc định'
+        code:
+          type: string
+          description: Code of the image type
+          example: 'DEFAULT'
+        status:
+          type: string
+          description: Status of the image type
+          example: 'ACTIVE'
+          enum:
+            - ACTIVE
+            - INACTIVE
+
+    ImageUploadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The URL of the uploaded image on Cloudinary
+          example: 'https://res.cloudinary.com/demo/image/upload/v1234567890/products/abc123.jpg'
+        publicId:
+          type: string
+          description: The public ID of the image in Cloudinary
+          example: 'products/abc123'
+        width:
+          type: integer
+          description: Image width in pixels
+          example: 1920
+        height:
+          type: integer
+          description: Image height in pixels
+          example: 1080
+        format:
+          type: string
+          description: Image format (jpg, png, etc.)
+          example: 'jpg'
+        resourceType:
+          type: string
+          description: Resource type
+          example: 'image'
+        createdAt:
+          type: string
+          description: Upload timestamp
+          example: '2024-01-15T10:30:00Z'
+
+    MultipleImageUploadResponse:
+      type: object
+      properties:
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageUploadResponse'
+          description: Array of uploaded image information
+        uploadedCount:
+          type: integer
+          description: Number of successfully uploaded images
+          example: 5
+        failedCount:
+          type: integer
+          description: Number of failed uploads
+          example: 0
+
+    # Enum
+    ProductStatusEnum:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - OUT_OF_STOCK
+        - DISCONTINUED
+
+    ImageInfo:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The URL of the image on Cloudinary
+          example: 'https://res.cloudinary.com/demo/image/upload/v1234567890/makotodecor/products/abc123.jpg'
+        publicId:
+          type: string
+          description: The public ID of the image in Cloudinary (used for deletion and transformation)
+          example: 'makotodecor/products/abc123'
+        imgTypeId:
+          type: integer
+          format: int64
+          description: The image type ID (from GET /v1/api/img-types)
+          example: 1
+        typeCode:
+          type: string
+          description: The image type code (DEFAULT, OTHER, DETAIL, COLOR, etc.) - for response only
+          example: 'DEFAULT'
+
+    ProductPriceRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Price ID (optional, only for update)
+        size:
+          type: string
+          description: Size of the product
+          example: 'M'
+        price:
+          type: number
+          format: double
+          description: Price of the product
+          example: 100000
+        discount:
+          type: number
+          format: double
+          description: Discount percentage
+          example: 10
+          minimum: 0
+          maximum: 100
+
+    ProductColorRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Color ID (optional, only for update)
+        name:
+          type: string
+          description: Name of the color
+          example: 'Đỏ'
+        colorCode:
+          type: string
+          description: Hex color code
+          example: '#FF0000'
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        image:
+          $ref: '#/components/schemas/ImageInfo'
+
+    BaseProductRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Product ID
+          example: 1
+        name:
+          type: string
+          description: Product name
+          example: 'Tên sản phẩm'
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          description: Product description
+          example: 'Mô tả sản phẩm'
+        categoryId:
+          type: integer
+          format: int64
+          description: Category ID
+          example: 1
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        discount:
+          type: integer
+          format: int64
+          description: Discount percentage
+          example: 10
+          minimum: 0
+          maximum: 100
+        baseSold:
+          type: integer
+          format: int64
+          description: Base sold count
+          example: 0
+          minimum: 0
+        defaultImage:
+          $ref: '#/components/schemas/ImageInfo'
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductPriceRequest'
+          minItems: 1
+          description: List of product prices
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductColorRequest'
+          description: List of product colors (optional)
+        otherImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+          description: List of other product images (optional)
+        detailImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+          description: List of detail product images (optional)
+
+    CreateProductRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseProductRequest'
+
+    UpdateProductRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseProductRequest'
+
+    ProductDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Product ID
+        name:
+          type: string
+          description: Product name
+        description:
+          type: string
+          description: Product description
+        categoryId:
+          type: integer
+          format: int64
+          description: Category ID
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        discount:
+          type: integer
+          format: int64
+          description: Discount percentage
+        baseSold:
+          type: integer
+          format: int64
+          description: Base sold count
+        defaultImage:
+          $ref: '#/components/schemas/ImageInfo'
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductPriceResponse'
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductColorResponse'
+        otherImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+        detailImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+        createdAt:
+          type: string
+          format: date-time
+          description: Created timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Updated timestamp
+
+    ProductPriceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Price ID
+        size:
+          type: string
+          description: Size of the product
+        price:
+          type: number
+          format: double
+          description: Price of the product
+        discount:
+          type: number
+          format: double
+          description: Discount percentage
+
+    ProductColorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Color ID
+        name:
+          type: string
+          description: Name of the color
+        colorCode:
+          type: string
+          description: Hex color code
+        image:
+          $ref: '#/components/schemas/ImageInfo'
+
+  parameters:
+    orderBy:
+      name: orderBy
+      in: query
+      description: order by fields
+      schema:
+        type: string
+    page:
+      name: page
+      in: query
+      required: true
+      schema:
+        type: integer
+      example: 0
+    size:
+      name: size
+      in: query
+      description: The number of elements displayed per page
+      required: true
+      schema:
+        type: integer
+      example: 10
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme. Format "Bearer {token}"
