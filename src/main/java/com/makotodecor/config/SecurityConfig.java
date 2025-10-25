@@ -62,7 +62,9 @@ public class SecurityConfig {
             .requestMatchers("/webjars/**").permitAll()
 
             // === BUSINESS ENDPOINTS ===
-            .requestMatchers("GET", "/v1/api/products").permitAll() // Public: Products list
+            .requestMatchers("GET", "/v1/api/products").permitAll()
+            .requestMatchers("GET", "/v1/api/categories").permitAll()
+            .requestMatchers("GET", "/v1/api/img-types").permitAll() // Public: Products list
             // Product details authorization handled by @PreAuthorize in controller
 
             // === DEFAULT RULE ===
