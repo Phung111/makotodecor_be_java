@@ -3,7 +3,6 @@ package com.makotodecor.exceptions.base;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Getter
 public enum ErrorMessage {
 
@@ -27,6 +26,17 @@ public enum ErrorMessage {
 
   // Category errors
   CATEGORY_NOT_FOUND("C001", "category.not.found"),
+  CATEGORY_CODE_ALREADY_EXISTS("C002", "category.code.already.exists"),
+  CATEGORY_HAS_PRODUCTS("C003", "category.has.products"),
+
+  // ImgType errors
+  IMGTYPE_NOT_FOUND("IT001", "imgtype.not.found"),
+  IMGTYPE_CODE_ALREADY_EXISTS("IT002", "imgtype.code.already.exists"),
+  IMGTYPE_HAS_IMAGES("IT003", "imgtype.has.images"),
+
+  // User errors
+  USER_NOT_FOUND("U001", "user.not.found"),
+  USER_HAS_ORDERS("U002", "user.has.orders"),
 
   // General errors
   ITEM_NOT_FOUND("G001", "item.not.found"),
@@ -69,4 +79,9 @@ public enum ErrorMessage {
 
   private final String code;
   private final String message;
+
+  ErrorMessage(String code, String message) {
+    this.code = code;
+    this.message = message;
+  }
 }

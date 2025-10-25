@@ -9,4 +9,6 @@ import com.makotodecor.model.entity.Category;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long>, QuerydslPredicateExecutor<Category> {
 
+  boolean existsByCode(String code);
+
 }

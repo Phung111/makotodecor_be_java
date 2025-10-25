@@ -10,6 +10,7 @@ import com.makotodecor.model.ProductDetailResponse;
 import com.makotodecor.model.ProductPriceRequest;
 import com.makotodecor.model.ProductsPagedResponse;
 import com.makotodecor.model.UpdateProductRequest;
+import com.makotodecor.model.UpdateProductsStatusRequest;
 import com.makotodecor.model.dto.ProductPagedCriteria;
 import com.makotodecor.model.entity.Category;
 import com.makotodecor.model.entity.Color;
@@ -221,6 +222,24 @@ public class ProductServiceImpl implements ProductService {
     product = productRepository.save(product);
 
     return productMapper.toProductDetailResponse(product);
+  }
+
+  @Override
+  @Transactional
+  public void updateProductsStatus(UpdateProductsStatusRequest request) {
+    var products = productRepository.findAllById(request.getProductIds());
+
+    if (products.size() != request.getProductIds().size()) {
+      throw new WebBadRequestException(ErrorMessage.PRODUCT_NOT_FOUND);
+    }
+
+    var newStatus = ProductStatusEnum.valueOf(request.getStatus().getValue());
+    products.forEach(product -> {
+      product.setStatus(newStatus);
+      product.setUpdatedAt(ZonedDateTime.now());
+    });
+
+    productRepository.saveAll(products);
   }
 
   private Product findProductById(Long productId) {

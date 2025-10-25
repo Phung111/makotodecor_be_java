@@ -1,10 +1,8 @@
 package com.makotodecor.model.enums;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum ProductStatusEnum implements PersistableEnum<String> {
 
   ACTIVE("ACTIVE"),
@@ -13,4 +11,13 @@ public enum ProductStatusEnum implements PersistableEnum<String> {
   DISCONTINUED("DISCONTINUED");
 
   private final String value;
+
+  ProductStatusEnum(String value) {
+    this.value = value;
+  }
+
+  @Override
+  public String getValue() {
+    return value;
+  }
 }

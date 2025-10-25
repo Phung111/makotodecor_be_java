@@ -4,6 +4,7 @@ import com.makotodecor.model.CreateProductRequest;
 import com.makotodecor.model.ProductDetailResponse;
 import com.makotodecor.model.ProductsPagedResponse;
 import com.makotodecor.model.UpdateProductRequest;
+import com.makotodecor.model.UpdateProductsStatusRequest;
 import com.makotodecor.model.dto.ProductPagedCriteria;
 
 public interface ProductService {
@@ -15,4 +16,6 @@ public interface ProductService {
   ProductDetailResponse createProduct(CreateProductRequest request);
 
   ProductDetailResponse updateProduct(Long productId, UpdateProductRequest request);
+
+  void updateProductsStatus(UpdateProductsStatusRequest request);
 }

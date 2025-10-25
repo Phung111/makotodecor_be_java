@@ -4,6 +4,7 @@ import com.makotodecor.model.CreateProductRequest;
 import com.makotodecor.model.ProductDetailResponse;
 import com.makotodecor.model.ProductsPagedResponse;
 import com.makotodecor.model.UpdateProductRequest;
+import com.makotodecor.model.UpdateProductsStatusRequest;
 import com.makotodecor.model.dto.ProductPagedCriteria;
 import com.makotodecor.model.enums.RoleEnum;
 import com.makotodecor.service.ProductService;
@@ -49,5 +50,12 @@ public class ProductController implements ProductServiceApi {
   // @PreAuthorize(RoleEnum.Auth.ADMIN)
   public ResponseEntity<ProductDetailResponse> _updateProduct(Long productId, UpdateProductRequest request) {
     return ResponseEntity.ok(productService.updateProduct(productId, request));
+  }
+
+  @Override
+  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  public ResponseEntity<String> _updateProductsStatus(UpdateProductsStatusRequest request) {
+    productService.updateProductsStatus(request);
+    return ResponseEntity.ok("Products status updated successfully");
   }
 }

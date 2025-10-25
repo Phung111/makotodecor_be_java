@@ -13,4 +13,6 @@ public interface ImgTypeRepository extends JpaRepository<ImgType, Long>, Queryds
 
   Optional<ImgType> findByCode(String code);
 
+  boolean existsByCode(String code);
+
 }

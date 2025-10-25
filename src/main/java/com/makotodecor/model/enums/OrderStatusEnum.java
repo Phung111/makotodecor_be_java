@@ -1,10 +1,8 @@
 package com.makotodecor.model.enums;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
 public enum OrderStatusEnum implements PersistableEnum<String> {
 
   NEW("NEW"),
@@ -13,4 +11,13 @@ public enum OrderStatusEnum implements PersistableEnum<String> {
   COMPLETED("COMPLETED");
 
   private final String value;
+
+  OrderStatusEnum(String value) {
+    this.value = value;
+  }
+
+  @Override
+  public String getValue() {
+    return value;
+  }
 }
