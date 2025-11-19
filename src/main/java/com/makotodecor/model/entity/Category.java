@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.makotodecor.model.enums.CategoryStatusEnum;
@@ -36,13 +38,19 @@ public class Category {
   @Type(CategoryStatusPsqlConvertedType.class)
   private CategoryStatusEnum status;
 
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "img_id")
+  private Img img;
+
   @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
   private List<Product> products;
 
   @Column(name = "created_at", nullable = false)
+  @CreatedDate
   private ZonedDateTime createdAt;
 
   @Column(name = "updated_at")
+  @LastModifiedDate
   private ZonedDateTime updatedAt;
 
   @Column(name = "updated_by")

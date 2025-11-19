@@ -39,6 +39,7 @@ CREATE TABLE categories (
     code VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     status category_status NOT NULL DEFAULT 'ACTIVE',
+    img_id BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT
@@ -62,6 +63,7 @@ CREATE TABLE products (
 -- Create colors table
 CREATE TABLE colors (
     id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
     color VARCHAR(255) NOT NULL,
     img_id BIGINT,
     product_id BIGINT NOT NULL
@@ -94,9 +96,11 @@ CREATE TABLE imgs (
     public_id VARCHAR(255),
     title VARCHAR(255),
     subtitle VARCHAR(255),
-    is_default BOOLEAN NOT NULL DEFAULT FALSE,
-    product_id BIGINT NOT NULL,
-    img_type_id BIGINT NOT NULL
+    is_default BOOLEAN DEFAULT FALSE,
+    product_id BIGINT,
+    img_type_id BIGINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ
 );
 
 -- Create carts table
@@ -164,6 +168,11 @@ ALTER TABLE colors
 ADD CONSTRAINT fk_colors_img 
 FOREIGN KEY (img_id) REFERENCES imgs(id);
 
+-- Categories to Imgs
+ALTER TABLE categories
+ADD CONSTRAINT fk_categories_img
+FOREIGN KEY (img_id) REFERENCES imgs(id);
+
 -- Sizes to Products
 ALTER TABLE sizes 
 ADD CONSTRAINT fk_sizes_product 
@@ -219,13 +228,3 @@ ALTER TABLE order_items
 ADD CONSTRAINT fk_order_items_product 
 FOREIGN KEY (product_id) REFERENCES products(id);
 
--- =====================================================
--- Insert Initial Data
--- =====================================================
-
--- Insert ImgTypes (DEFAULT, OTHER, DETAIL, COLOR)
-INSERT INTO img_types (name, code, status, created_at) VALUES
-('Mặc định', 'DEFAULT', 'ACTIVE', CURRENT_TIMESTAMP),
-('Khác', 'OTHER', 'ACTIVE', CURRENT_TIMESTAMP),
-('Chi tiết', 'DETAIL', 'ACTIVE', CURRENT_TIMESTAMP),
-('Màu sắc', 'COLOR', 'ACTIVE', CURRENT_TIMESTAMP);

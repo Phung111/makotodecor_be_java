@@ -10,16 +10,18 @@ import com.makotodecor.model.UpdateCategoryRequest;
 import com.makotodecor.model.UpdateCategoriesStatusRequest;
 import com.makotodecor.model.dto.CategoryPagedCriteria;
 import com.makotodecor.model.entity.Category;
+import com.makotodecor.model.entity.Img;
 import com.makotodecor.model.enums.CategoryStatusEnum;
 import com.makotodecor.repository.CategoryRepository;
+import com.makotodecor.repository.ImgRepository;
 import com.makotodecor.service.CategoryService;
+import com.makotodecor.util.CategoryValidationUtils;
 import com.makotodecor.util.PaginationUtils;
 import com.makotodecor.util.QuerydslCriteriaUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.ZonedDateTime;
 import java.util.Set;
 
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +35,7 @@ public class CategoryServiceImpl implements CategoryService {
 
   private final CategoryRepository categoryRepository;
   private final CategoryMapper categoryMapper;
+  private final ImgRepository imgRepository;
 
   private static final Set<String> CATEGORY_SORTABLE_COLUMNS = Set.of("id", "code", "name", "status", "createdAt",
       "updatedAt");
@@ -68,13 +71,24 @@ public class CategoryServiceImpl implements CategoryService {
   @Override
   @Transactional
   public CategoryDetailResponse createCategory(CreateCategoryRequest request) {
+    CategoryValidationUtils.validateCreateCategoryRequest(request);
+
     // Check if code already exists
     if (categoryRepository.existsByCode(request.getCode())) {
       throw new WebBadRequestException(ErrorMessage.CATEGORY_CODE_ALREADY_EXISTS);
     }
 
     Category category = categoryMapper.toCategory(request);
-    category.setCreatedAt(ZonedDateTime.now());
+
+    // Save image to database before saving category
+    if (request.getImg() != null) {
+      var img = Img.builder()
+          .url(request.getImg().getUrl())
+          .priority(0L)
+          .build();
+      img = imgRepository.save(img);
+      category.setImg(img);
+    }
 
     category = categoryRepository.save(category);
 
@@ -84,16 +98,27 @@ public class CategoryServiceImpl implements CategoryService {
   @Override
   @Transactional
   public CategoryDetailResponse updateCategory(Long categoryId, UpdateCategoryRequest request) {
+    CategoryValidationUtils.validateUpdateCategoryRequest(request);
+
     Category category = findCategoryById(categoryId);
 
     // Check if code already exists for different category
-    if (request.getCode() != null && !request.getCode().equals(category.getCode())) {
-      if (categoryRepository.existsByCode(request.getCode())) {
-        throw new WebBadRequestException(ErrorMessage.CATEGORY_CODE_ALREADY_EXISTS);
-      }
+    if (request.getCode() != null && !request.getCode().equals(category.getCode())
+        && categoryRepository.existsByCode(request.getCode())) {
+      throw new WebBadRequestException(ErrorMessage.CATEGORY_CODE_ALREADY_EXISTS);
     }
 
     category = categoryMapper.updateCategoryFromRequest(request, category);
+
+    // Save image to database before saving category
+    if (request.getImg() != null) {
+      var img = Img.builder()
+          .url(request.getImg().getUrl())
+          .priority(0L)
+          .build();
+      img = imgRepository.save(img);
+      category.setImg(img);
+    }
 
     category = categoryRepository.save(category);
 
@@ -110,10 +135,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     var newStatus = CategoryStatusEnum.valueOf(request.getStatus().getValue());
-    categories.forEach(category -> {
-      category.setStatus(newStatus);
-      category.setUpdatedAt(ZonedDateTime.now());
-    });
+    categories.forEach(category -> category.setStatus(newStatus));
 
     categoryRepository.saveAll(categories);
   }

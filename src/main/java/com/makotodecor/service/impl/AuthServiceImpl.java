@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
   private final AuthenticationManager authenticationManager;
 
   @Override
+  @Transactional
   public Token register(RegisterRequest request) {
     // Validate request
     AuthValidationUtils.validateRegisterRequest(request);
@@ -162,7 +164,6 @@ public class AuthServiceImpl implements AuthService {
 
     // Update password
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-    user.setUpdatedAt(ZonedDateTime.now());
     userRepository.save(user);
   }
 }

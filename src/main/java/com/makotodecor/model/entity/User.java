@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.makotodecor.model.enums.UserStatusEnum;
@@ -57,8 +59,10 @@ public class User {
   private List<Order> orders;
 
   @Column(name = "created_at", nullable = false)
+  @CreatedDate
   private ZonedDateTime createdAt;
 
   @Column(name = "updated_at")
+  @LastModifiedDate
   private ZonedDateTime updatedAt;
 }

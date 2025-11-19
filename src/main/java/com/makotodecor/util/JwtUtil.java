@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +35,25 @@ public class JwtUtil {
   private Integer expirationHours;
 
   private SecretKey getSigningKey() {
-    return Keys.hmacShaKeyFor(secret.getBytes());
+    try {
+      // Hash the secret to ensure it's at least 256 bits (32 bytes) for HMAC-SHA256
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] keyBytes = digest.digest(secret.getBytes());
+      return Keys.hmacShaKeyFor(keyBytes);
+    } catch (NoSuchAlgorithmException e) {
+      // Fallback: if SHA-256 is not available, pad the secret to at least 32 bytes
+      byte[] secretBytes = secret.getBytes();
+      if (secretBytes.length < 32) {
+        byte[] paddedKey = new byte[32];
+        System.arraycopy(secretBytes, 0, paddedKey, 0, secretBytes.length);
+        // Repeat the secret to fill the remaining bytes
+        for (int i = secretBytes.length; i < 32; i++) {
+          paddedKey[i] = secretBytes[i % secretBytes.length];
+        }
+        return Keys.hmacShaKeyFor(paddedKey);
+      }
+      return Keys.hmacShaKeyFor(secretBytes);
+    }
   }
 
   public String extractUsername(String token) {

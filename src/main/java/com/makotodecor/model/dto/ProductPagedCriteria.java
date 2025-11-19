@@ -14,6 +14,8 @@ public class ProductPagedCriteria {
   private Integer size;
   private String orderBy;
   private String name;
+  private Integer minPrice;
+  private Integer maxPrice;
   private String status;
   private String category;
 }

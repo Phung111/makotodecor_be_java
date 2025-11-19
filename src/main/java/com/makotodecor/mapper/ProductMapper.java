@@ -16,11 +16,16 @@ import com.makotodecor.model.entity.Size;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
 
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 
   @Mapping(target = "img", expression = "java(getDefaultImageUrl(product))")
+  @Mapping(target = "minPrice", expression = "java(getMinPrice(product))")
+  @Mapping(target = "finalPrice", expression = "java(getFinalPrice(product))")
+  @Mapping(target = "sold", expression = "java(getTotalSold(product))")
   ProductItemResponse toProductItemResponse(Product product);
 
   @Mapping(target = "status", expression = "java(mapStatusToDto(product.getStatus()))")
@@ -41,6 +46,7 @@ public interface ProductMapper {
   Size toSize(ProductPriceRequest request, Product product);
 
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "name", source = "request.name")
   @Mapping(target = "color", source = "request.colorCode")
   @Mapping(target = "img", expression = "java(toColorImg(request.getImage(), product))")
   @Mapping(target = "product", source = "product")
@@ -57,11 +63,16 @@ public interface ProductMapper {
   @Mapping(target = "imgType", expression = "java(createImgTypeReference(imageInfo.getImgTypeId()))")
   Img toImg(ImageInfo imageInfo, Product product, boolean isDefault, Long priority);
 
-  @Mapping(target = "id", source = "id")
-  @Mapping(target = "size", source = "size")
-  @Mapping(target = "price", expression = "java(size.getPrice().doubleValue())")
-  @Mapping(target = "discount", ignore = true)
-  ProductPriceRequest toProductPriceRequest(Size size);
+  default ProductPriceRequest toProductPriceRequest(Size size) {
+    if (size == null) {
+      return null;
+    }
+    ProductPriceRequest request = new ProductPriceRequest();
+    request.setId(size.getId());
+    request.setSize(size.getSize());
+    request.setPrice(size.getPrice() != null ? size.getPrice().doubleValue() : null);
+    return request;
+  }
 
   @Mapping(target = "id", source = "id")
   @Mapping(target = "name", ignore = true)
@@ -76,16 +87,21 @@ public interface ProductMapper {
   ImageInfo toImageInfo(Img img);
 
   @Mapping(target = "id", source = "id")
-  @Mapping(target = "name", ignore = true)
+  @Mapping(target = "name", source = "name")
   @Mapping(target = "colorCode", source = "color")
   @Mapping(target = "image", expression = "java(mapColorImage(color))")
   com.makotodecor.model.ProductColorResponse toProductColorResponse(Color color);
 
-  @Mapping(target = "id", source = "id")
-  @Mapping(target = "size", source = "size")
-  @Mapping(target = "price", expression = "java(size.getPrice().doubleValue())")
-  @Mapping(target = "discount", ignore = true)
-  com.makotodecor.model.ProductPriceResponse toProductPriceResponse(Size size);
+  default com.makotodecor.model.ProductPriceResponse toProductPriceResponse(Size size) {
+    if (size == null) {
+      return null;
+    }
+    com.makotodecor.model.ProductPriceResponse response = new com.makotodecor.model.ProductPriceResponse();
+    response.setId(size.getId());
+    response.setSize(size.getSize());
+    response.setPrice(size.getPrice() != null ? size.getPrice() : null);
+    return response;
+  }
 
   default String getDefaultImageUrl(Product product) {
     if (product == null || product.getImgs() == null || product.getImgs().isEmpty()) {
@@ -151,7 +167,7 @@ public interface ProductMapper {
 
   default List<ImageInfo> getOtherImages(Product product) {
     if (product == null || product.getImgs() == null) {
-      return null;
+      return new ArrayList<>();
     }
     return product.getImgs().stream()
         .filter(img -> img.getImgType() != null && "OTHER".equals(img.getImgType().getCode()))
@@ -161,7 +177,7 @@ public interface ProductMapper {
 
   default List<ImageInfo> getDetailImages(Product product) {
     if (product == null || product.getImgs() == null) {
-      return null;
+      return new ArrayList<>();
     }
     return product.getImgs().stream()
         .filter(img -> img.getImgType() != null && "DETAIL".equals(img.getImgType().getCode()))
@@ -171,19 +187,50 @@ public interface ProductMapper {
 
   default List<com.makotodecor.model.ProductPriceResponse> mapSizesToPrices(List<Size> sizes) {
     if (sizes == null) {
-      return null;
+      return new ArrayList<>();
     }
     return sizes.stream()
         .map(this::toProductPriceResponse)
+        .filter(Objects::nonNull)
         .toList();
   }
 
   default List<com.makotodecor.model.ProductColorResponse> mapColorsToResponse(List<Color> colors) {
     if (colors == null) {
-      return null;
+      return new ArrayList<>();
     }
     return colors.stream()
         .map(this::toProductColorResponse)
+        .filter(Objects::nonNull)
         .toList();
+  }
+
+  default Long getMinPrice(Product product) {
+    if (product == null || product.getSizes() == null || product.getSizes().isEmpty()) {
+      return null;
+    }
+    return product.getSizes().stream()
+        .map(Size::getPrice)
+        .filter(Objects::nonNull)
+        .min(Long::compare)
+        .orElse(null);
+  }
+
+  default Long getFinalPrice(Product product) {
+    Long minPrice = getMinPrice(product);
+    if (minPrice == null || product.getDiscount() == null) {
+      return null;
+    }
+    // Calculate: minPrice * (100 - discount) / 100
+    return minPrice * (100 - product.getDiscount()) / 100;
+  }
+
+  default Long getTotalSold(Product product) {
+    if (product == null) {
+      return null;
+    }
+    Long sold = product.getSold() == null ? 0L : product.getSold();
+    Long baseSold = product.getBaseSold() == null ? 0L : product.getBaseSold();
+    return sold + baseSold;
   }
 }

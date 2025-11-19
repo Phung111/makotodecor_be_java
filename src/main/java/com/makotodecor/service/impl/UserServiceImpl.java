@@ -102,7 +102,6 @@ public class UserServiceImpl implements UserService {
     var newStatus = UserStatusEnum.valueOf(request.getStatus().getValue());
     users.forEach(user -> {
       user.setStatus(newStatus);
-      user.setUpdatedAt(ZonedDateTime.now());
     });
 
     userRepository.saveAll(users);

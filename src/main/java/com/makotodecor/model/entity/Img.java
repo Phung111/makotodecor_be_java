@@ -3,7 +3,11 @@ package com.makotodecor.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(name = "imgs")
@@ -33,14 +37,23 @@ public class Img {
 
   private String subtitle;
 
-  @Column(name = "is_default", nullable = false)
-  private Boolean isDefault;
+  @Column(name = "is_default")
+  @Builder.Default
+  private Boolean isDefault = false;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "product_id", nullable = false)
+  @JoinColumn(name = "product_id")
   private Product product;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "img_type_id", nullable = false)
+  @JoinColumn(name = "img_type_id")
   private ImgType imgType;
+
+  @Column(name = "created_at", nullable = false)
+  @CreatedDate
+  private ZonedDateTime createdAt;
+
+  @Column(name = "updated_at")
+  @LastModifiedDate
+  private ZonedDateTime updatedAt;
 }

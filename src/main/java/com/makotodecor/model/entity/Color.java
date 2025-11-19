@@ -21,6 +21,9 @@ public class Color {
   private Long id;
 
   @Column(nullable = false)
+  private String name;
+
+  @Column(nullable = false)
   private String color;
 
   @OneToOne(fetch = FetchType.LAZY)

@@ -1,7 +1,6 @@
 package com.makotodecor.exceptions.base;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 @Getter
 public enum ErrorMessage {
@@ -28,6 +27,16 @@ public enum ErrorMessage {
   CATEGORY_NOT_FOUND("C001", "category.not.found"),
   CATEGORY_CODE_ALREADY_EXISTS("C002", "category.code.already.exists"),
   CATEGORY_HAS_PRODUCTS("C003", "category.has.products"),
+  CATEGORY_INVALID("C004", "category.invalid"),
+
+  // Category validation errors
+  CATEGORY_CODE_REQUIRED("C005", "category.code.required"),
+  CATEGORY_CODE_INVALID("C006", "category.code.invalid"),
+  CATEGORY_NAME_REQUIRED("C007", "category.name.required"),
+  CATEGORY_NAME_INVALID("C008", "category.name.invalid"),
+  CATEGORY_STATUS_REQUIRED("C009", "category.status.required"),
+  CATEGORY_STATUS_INVALID("C010", "category.status.invalid"),
+  CATEGORY_IMAGE_URL_REQUIRED("C011", "category.image.url.required"),
 
   // ImgType errors
   IMGTYPE_NOT_FOUND("IT001", "imgtype.not.found"),
@@ -40,6 +49,14 @@ public enum ErrorMessage {
 
   // General errors
   ITEM_NOT_FOUND("G001", "item.not.found"),
+
+  // Image errors
+  IMAGE_NOT_FOUND("I001", "image.not.found"),
+  IMAGE_URL_REQUIRED("I002", "image.url.required"),
+  IMAGE_TYPE_REQUIRED("I003", "image.type.required"),
+  IMAGE_TYPE_NOT_FOUND("I004", "image.type.not.found"),
+  IMAGE_TYPE_CODE_ALREADY_EXISTS("I005", "image.type.code.already.exists"),
+  IMAGE_TYPE_HAS_IMAGES("I006", "image.type.has.images"),
 
   // Authentication validation errors
   AUTH_USERNAME_REQUIRED("A001", "auth.username.required"),

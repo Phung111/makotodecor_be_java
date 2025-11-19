@@ -53,7 +53,6 @@ public class ImgTypeServiceImpl implements ImgTypeService {
     }
 
     ImgType imgType = imgTypeMapper.toImgType(request);
-    imgType.setCreatedAt(ZonedDateTime.now());
 
     imgType = imgTypeRepository.save(imgType);
 
@@ -91,7 +90,6 @@ public class ImgTypeServiceImpl implements ImgTypeService {
     var newStatus = ImgTypeStatusEnum.valueOf(request.getStatus().getValue());
     imgTypes.forEach(imgType -> {
       imgType.setStatus(newStatus);
-      imgType.setUpdatedAt(ZonedDateTime.now());
     });
 
     imgTypeRepository.saveAll(imgTypes);

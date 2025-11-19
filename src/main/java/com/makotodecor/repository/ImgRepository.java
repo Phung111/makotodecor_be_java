@@ -13,4 +13,6 @@ public interface ImgRepository extends JpaRepository<Img, Long>, QuerydslPredica
 
   java.util.List<Img> findByProductId(Long productId);
 
+  java.util.Optional<Img> findFirstByUrl(String url);
+
 }

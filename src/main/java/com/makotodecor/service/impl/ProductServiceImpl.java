@@ -36,7 +36,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -59,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
       "category", "updatedAt");
 
   @Override
+  @Transactional(readOnly = true)
   public ProductsPagedResponse getProductsPaged(ProductPagedCriteria criteria) {
     var sortCriteria = PaginationUtils.parseSortCriteria(criteria.getOrderBy());
     PaginationUtils.validateSortColumns(sortCriteria, PRODUCT_SORTABLE_COLUMNS);
@@ -72,9 +72,17 @@ public class ProductServiceImpl implements ProductService {
 
     var pageResponse = productRepository.findAll(predicate, pageable);
 
+    // Fetch sizes for all products in batch to avoid N+1 problem
+    List<Product> products = pageResponse.getContent();
+    products.forEach(product -> {
+      if (product.getSizes() != null) {
+        product.getSizes().size(); // Trigger lazy loading
+      }
+    });
+
     return ProductsPagedResponse.builder()
         .pageInfo(PaginationUtils.toPageInfo(pageResponse))
-        .items(pageResponse.getContent().stream()
+        .items(products.stream()
             .map(productMapper::toProductItemResponse)
             .toList())
         .build();
@@ -104,20 +112,35 @@ public class ProductServiceImpl implements ProductService {
         .sold(0L)
         .baseSold(request.getBaseSold() != null ? request.getBaseSold() : 0L)
         .createdAt(ZonedDateTime.now())
+        .updatedAt(ZonedDateTime.now())
         .build();
 
     product = productRepository.save(product);
 
     if (request.getPrices() != null && !request.getPrices().isEmpty()) {
       List<Size> sizes = createSizesFromPrices(request.getPrices(), product);
+      sizes = sizeRepository.saveAll(sizes);
       product.setSizes(sizes);
     }
 
+    // Save color images first, then colors (colors reference images)
+    List<Color> colors = null;
     if (request.getColors() != null && !request.getColors().isEmpty()) {
-      List<Color> colors = createColorsFromRequest(request.getColors(), product);
+      colors = createColorsFromRequest(request.getColors(), product);
+      // Extract and save all images from colors first
+      List<Img> colorImages = colors.stream()
+          .map(Color::getImg)
+          .filter(java.util.Objects::nonNull)
+          .toList();
+      if (!colorImages.isEmpty()) {
+        imgRepository.saveAll(colorImages);
+      }
+      // Now save colors (with persisted img references)
+      colors = colorRepository.saveAll(colors);
       product.setColors(colors);
     }
 
+    // Create and save other images (default, other, detail)
     List<Img> images = new ArrayList<>();
 
     if (request.getDefaultImage() != null) {
@@ -136,6 +159,20 @@ public class ProductServiceImpl implements ProductService {
       }
     }
 
+    // Save other images (default, other, detail) - color images already saved above
+    if (!images.isEmpty()) {
+      images = imgRepository.saveAll(images);
+    }
+
+    // Add color images to the images list (already persisted, just for
+    // product.getImgs())
+    if (colors != null && !colors.isEmpty()) {
+      List<Img> colorImages = colors.stream()
+          .map(Color::getImg)
+          .filter(java.util.Objects::nonNull)
+          .toList();
+      images.addAll(colorImages);
+    }
     product.setImgs(images);
 
     product = productRepository.save(product);
@@ -165,7 +202,6 @@ public class ProductServiceImpl implements ProductService {
     if (request.getBaseSold() != null) {
       product.setBaseSold(request.getBaseSold());
     }
-    product.setUpdatedAt(ZonedDateTime.now());
 
     if (request.getPrices() != null) {
       sizeRepository.deleteByProductId(productId);
@@ -174,11 +210,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     if (request.getColors() != null) {
+      // Remove old colors first
       colorRepository.deleteByProductId(productId);
-      List<Color> colors = createColorsFromRequest(request.getColors(), product);
-      colorRepository.saveAll(colors);
     }
 
+    // Delete all old images BEFORE inserting new ones (including color images)
     List<Img> oldImages = imgRepository.findByProductId(productId);
     if (!oldImages.isEmpty()) {
       List<String> publicIds = oldImages.stream()
@@ -196,6 +232,19 @@ public class ProductServiceImpl implements ProductService {
       }
 
       imgRepository.deleteByProductId(productId);
+    }
+
+    // Now recreate colors and their images
+    if (request.getColors() != null) {
+      List<Color> colors = createColorsFromRequest(request.getColors(), product);
+      List<Img> colorImages = colors.stream()
+          .map(Color::getImg)
+          .filter(java.util.Objects::nonNull)
+          .toList();
+      if (!colorImages.isEmpty()) {
+        imgRepository.saveAll(colorImages);
+      }
+      colorRepository.saveAll(colors);
     }
 
     List<Img> images = new ArrayList<>();
@@ -236,7 +285,6 @@ public class ProductServiceImpl implements ProductService {
     var newStatus = ProductStatusEnum.valueOf(request.getStatus().getValue());
     products.forEach(product -> {
       product.setStatus(newStatus);
-      product.setUpdatedAt(ZonedDateTime.now());
     });
 
     productRepository.saveAll(products);
@@ -250,13 +298,13 @@ public class ProductServiceImpl implements ProductService {
   private List<Size> createSizesFromPrices(List<ProductPriceRequest> prices, Product product) {
     return prices.stream()
         .map(priceReq -> productMapper.toSize(priceReq, product))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private List<Color> createColorsFromRequest(List<ProductColorRequest> colorRequests, Product product) {
     return colorRequests.stream()
         .map(colorReq -> productMapper.toColor(colorReq, product))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private Img createImg(ImageInfo imageInfo, Product product, boolean isDefault, Long priority) {

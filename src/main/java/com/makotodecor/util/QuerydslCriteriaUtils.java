@@ -25,7 +25,9 @@ public class QuerydslCriteriaUtils {
     final QProduct qProduct = QProduct.product;
 
     final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
-        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qProduct.name, criteria.getName()), criteria.getName()));
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qProduct.name, criteria.getName()), criteria.getName()),
+        () -> eqIfNotNull(() -> qProduct.sizes.any().price.goe(criteria.getMinPrice()), criteria.getMinPrice()),
+        () -> eqIfNotNull(() -> qProduct.sizes.any().price.loe(criteria.getMaxPrice()), criteria.getMaxPrice()));
     return buildPredicate(expressions);
   }
 
