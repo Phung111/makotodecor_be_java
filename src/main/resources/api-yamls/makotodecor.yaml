@@ -184,7 +184,7 @@ paths:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
         - $ref: '#/components/parameters/orderBy'
-        - name: name
+        - name: keySearch
           in: query
           required: false
           schema:
@@ -194,11 +194,24 @@ paths:
           required: false
           schema:
             type: string
-        - name: category
+        - name: categoryId
           in: query
           required: false
           schema:
-            type: string
+            type: integer
+            format: int64
+        - name: minPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: maxPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         '200':
           description: Products paged retrieved successfully
@@ -1588,7 +1601,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ErrorField'
-    
+
     ErrorField:
       type: object
       properties:

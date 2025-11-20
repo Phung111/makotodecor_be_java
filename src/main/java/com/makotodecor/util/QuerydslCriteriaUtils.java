@@ -11,8 +11,10 @@ import com.makotodecor.model.dto.UserPagedCriteria;
 import com.makotodecor.model.entity.QProduct;
 import com.makotodecor.model.entity.QCategory;
 import com.makotodecor.model.entity.QUser;
+import com.makotodecor.model.enums.ProductStatusEnum;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.core.types.ExpressionUtils;
 
 public class QuerydslCriteriaUtils {
@@ -25,9 +27,13 @@ public class QuerydslCriteriaUtils {
     final QProduct qProduct = QProduct.product;
 
     final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
-        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qProduct.name, criteria.getName()), criteria.getName()),
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qProduct.name, criteria.getKeySearch()),
+            criteria.getKeySearch()),
+        () -> eqIfNotNull(() -> qProduct.category().id.eq(criteria.getCategoryId()), criteria.getCategoryId()),
         () -> eqIfNotNull(() -> qProduct.sizes.any().price.goe(criteria.getMinPrice()), criteria.getMinPrice()),
-        () -> eqIfNotNull(() -> qProduct.sizes.any().price.loe(criteria.getMaxPrice()), criteria.getMaxPrice()));
+        () -> eqIfNotNull(() -> qProduct.sizes.any().price.loe(criteria.getMaxPrice()), criteria.getMaxPrice()),
+        () -> eqIfNotNull(() -> qProduct.status.eq(ProductStatusEnum.valueOf(criteria.getStatus())),
+            criteria.getStatus()));
     return buildPredicate(expressions);
   }
 
@@ -59,10 +65,10 @@ public class QuerydslCriteriaUtils {
 
   private static Predicate containsIgnoreCaseDiacritics(com.querydsl.core.types.Expression<String> path,
       String value) {
-    return Expressions.booleanTemplate(
-        "unaccent(lower({0})) like concat('%', unaccent(lower({1})), '%')",
-        path,
-        value);
+    StringExpression pathExpr = Expressions.stringTemplate("unaccent(lower({0}))", path);
+    StringExpression valueExpr = Expressions.stringTemplate("unaccent(lower({0}))", Expressions.constant(value));
+    StringExpression patternExpr = Expressions.stringTemplate("concat('%', {0}, '%')", valueExpr);
+    return pathExpr.like(patternExpr);
   }
 
   private static Optional<Predicate> eqIfNotNull(Supplier<Predicate> expression, Object value) {

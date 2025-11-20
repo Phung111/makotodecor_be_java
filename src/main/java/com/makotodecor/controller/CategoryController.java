@@ -39,26 +39,26 @@ public class CategoryController implements CategoryServiceApi {
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<CategoryDetailResponse> _createCategory(CreateCategoryRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.createCategory(request));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<CategoryDetailResponse> _updateCategory(Long categoryId, UpdateCategoryRequest request) {
     return ResponseEntity.ok(categoryService.updateCategory(categoryId, request));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _updateCategoriesStatus(UpdateCategoriesStatusRequest request) {
     categoryService.updateCategoriesStatus(request);
     return ResponseEntity.ok("Categories status updated successfully");
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<String> _deleteCategory(Long categoryId) {
     categoryService.deleteCategory(categoryId);
     return ResponseEntity.ok("Category deleted successfully");

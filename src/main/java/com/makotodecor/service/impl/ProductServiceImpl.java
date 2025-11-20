@@ -54,8 +54,8 @@ public class ProductServiceImpl implements ProductService {
   private final FileUploadService fileUploadService;
   private final ProductMapper productMapper;
 
-  private static final Set<String> PRODUCT_SORTABLE_COLUMNS = Set.of("id", "name", "status", "discount", "sold",
-      "category", "updatedAt");
+  private static final Set<String> PRODUCT_SORTABLE_COLUMNS = Set.of("id", "name", "status", "price", "discount",
+      "sold", "category", "updatedAt");
 
   @Override
   @Transactional(readOnly = true)
@@ -63,20 +63,19 @@ public class ProductServiceImpl implements ProductService {
     var sortCriteria = PaginationUtils.parseSortCriteria(criteria.getOrderBy());
     PaginationUtils.validateSortColumns(sortCriteria, PRODUCT_SORTABLE_COLUMNS);
 
+    var predicate = QuerydslCriteriaUtils.buildProductSearchPredicate(criteria)
+        .orElse(QuerydslCriteriaUtils.truePredicate());
+
     var pageable = PageRequest
         .of(criteria.getPage(), criteria.getSize())
         .withSort(sortCriteria);
 
-    var predicate = QuerydslCriteriaUtils.buildProductSearchPredicate(criteria)
-        .orElse(QuerydslCriteriaUtils.truePredicate());
+    var pageResponse = productRepository.findAllWithSpecialSort(predicate, pageable);
 
-    var pageResponse = productRepository.findAll(predicate, pageable);
-
-    // Fetch sizes for all products in batch to avoid N+1 problem
     List<Product> products = pageResponse.getContent();
     products.forEach(product -> {
       if (product.getSizes() != null) {
-        product.getSizes().size(); // Trigger lazy loading
+        product.getSizes().size();
       }
     });
 
