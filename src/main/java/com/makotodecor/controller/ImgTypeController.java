@@ -2,8 +2,10 @@ package com.makotodecor.controller;
 
 import com.makotodecor.model.CreateImgTypeRequest;
 import com.makotodecor.model.ImgTypeResponse;
+import com.makotodecor.model.ImgTypesPagedResponse;
 import com.makotodecor.model.UpdateImgTypeRequest;
 import com.makotodecor.model.UpdateImgTypesStatusRequest;
+import com.makotodecor.model.dto.ImgTypePagedCriteria;
 import com.makotodecor.service.ImgTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,19 @@ public class ImgTypeController implements ImgTypeServiceApi {
   @Override
   public ResponseEntity<List<ImgTypeResponse>> _getAllImgTypes() {
     return ResponseEntity.ok(imgTypeService.getAllImgTypes());
+  }
+
+  public ResponseEntity<ImgTypesPagedResponse> _getImgTypesPaged(Integer page, Integer size, String orderBy,
+      String name, String code, String status) {
+    var criteria = ImgTypePagedCriteria.builder()
+        .page(page)
+        .size(size)
+        .orderBy(orderBy)
+        .name(name)
+        .code(code)
+        .status(status)
+        .build();
+    return ResponseEntity.ok(imgTypeService.getImgTypesPaged(criteria));
   }
 
   @Override

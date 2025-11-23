@@ -24,6 +24,8 @@ tags:
     description: Image management service
   - name: userService
     description: User management service
+  - name: orderService
+    description: Order management service
 paths:
   /v1/api/auth/register:
     post:
@@ -930,6 +932,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /v1/api/img-types/paged:
+    get:
+      tags:
+        - imgTypeService
+      operationId: getImgTypesPaged
+      summary: Get image types paged
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/orderBy'
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+      responses:
+        '200':
+          description: Image types paged retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImgTypesPagedResponse'
+        '400':
+          description: Bad Request when missing necessary parameters
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /v1/api/img-types/update-status:
     put:
       tags:
@@ -971,6 +1015,143 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Order endpoints
+  /v1/api/orders:
+    get:
+      tags:
+        - orderService
+      operationId: getOrdersPaged
+      summary: Get orders paged
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/orderBy'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [NEW, DEPOSITED, CANCELLED, COMPLETED]
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Orders paged retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdersPagedResponse'
+        '400':
+          description: Bad Request when missing necessary parameters
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/orders/{orderId}:
+    get:
+      tags:
+        - orderService
+      operationId: getOrder
+      summary: Get order by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order
+          example: 1
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/orders/update-status:
+    put:
+      tags:
+        - orderService
+      operationId: updateOrderStatus
+      summary: Update order status
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusRequest'
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                example: 'Order status updated successfully'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # Img endpoints
   /v1/api/imgs:
     get:
@@ -990,10 +1171,11 @@ paths:
             format: int64
         - name: imgTypeId
           in: query
-          required: false
+          required: true
           schema:
             type: integer
             format: int64
+          description: Image type ID (required)
         - name: isDefault
           in: query
           required: false
@@ -1637,6 +1819,36 @@ components:
             - ACTIVE
             - INACTIVE
 
+    ImgTypesPagedResponse:
+      type: object
+      properties:
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImgTypeItemResponse'
+
+    ImgTypeItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ImgType ID
+        name:
+          type: string
+          description: Display name of the image type
+        code:
+          type: string
+          description: Code of the image type
+        status:
+          $ref: '#/components/schemas/ImgTypeStatusEnum'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Updated timestamp
+
     ImageUploadResponse:
       type: object
       properties:
@@ -2036,6 +2248,8 @@ components:
 
     ImgItemResponse:
       type: object
+      required:
+        - product
       properties:
         id:
           type: integer
@@ -2060,14 +2274,25 @@ components:
         isDefault:
           type: boolean
           description: Whether this is the default image
-        productId:
-          type: integer
-          format: int64
-          description: Product ID
+        product:
+          type: object
+          description: Product information
+          properties:
+            id:
+              type: integer
+              format: int64
+              description: Product ID
+            name:
+              type: string
+              description: Product name
         imgTypeId:
           type: integer
           format: int64
           description: Image type ID
+        updatedAt:
+          type: string
+          format: date-time
+          description: Updated timestamp
 
     ImgDetailResponse:
       type: object
@@ -2339,6 +2564,132 @@ components:
           description: Array of user IDs to update
         status:
           $ref: '#/components/schemas/UserStatusEnum'
+
+    # Order schemas
+    OrdersPagedResponse:
+      type: object
+      properties:
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemResponse'
+
+    OrderItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Order ID
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        userId:
+          type: integer
+          format: int64
+          description: User ID
+        username:
+          type: string
+          description: Username
+        userEmail:
+          type: string
+          format: email
+          description: User email
+        total:
+          type: integer
+          format: int64
+          description: Total amount
+        itemCount:
+          type: integer
+          format: int64
+          description: Number of items in order
+        createdAt:
+          type: string
+          format: date-time
+          description: Created timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Updated timestamp
+
+    OrderDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Order ID
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        user:
+          $ref: '#/components/schemas/UserItemResponse'
+        orderItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDetailResponse'
+        total:
+          type: integer
+          format: int64
+          description: Total amount
+        createdAt:
+          type: string
+          format: date-time
+          description: Created timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Updated timestamp
+
+    OrderItemDetailResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Order item ID
+        product:
+          $ref: '#/components/schemas/ProductItemResponse'
+        quantity:
+          type: integer
+          format: int64
+          description: Quantity
+        price:
+          type: integer
+          format: int64
+          description: Price per item
+        discount:
+          type: integer
+          format: int64
+          description: Discount percentage
+        subtotal:
+          type: integer
+          format: int64
+          description: Subtotal (price * quantity * (100 - discount) / 100)
+        colorName:
+          type: string
+          description: Color name
+        sizeName:
+          type: string
+          description: Size name
+
+    UpdateOrderStatusRequest:
+      type: object
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: Order ID
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+
+    OrderStatusEnum:
+      type: string
+      enum:
+        - NEW
+        - DEPOSITED
+        - CANCELLED
+        - COMPLETED
 
   parameters:
     orderBy:

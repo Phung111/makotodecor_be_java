@@ -8,9 +8,15 @@ import java.util.stream.Stream;
 import com.makotodecor.model.dto.ProductPagedCriteria;
 import com.makotodecor.model.dto.CategoryPagedCriteria;
 import com.makotodecor.model.dto.UserPagedCriteria;
+import com.makotodecor.model.dto.ImgTypePagedCriteria;
+import com.makotodecor.model.dto.OrderPagedCriteria;
+import com.makotodecor.model.dto.ImgPagedCriteria;
 import com.makotodecor.model.entity.QProduct;
 import com.makotodecor.model.entity.QCategory;
 import com.makotodecor.model.entity.QUser;
+import com.makotodecor.model.entity.QImgType;
+import com.makotodecor.model.entity.QOrder;
+import com.makotodecor.model.entity.QImg;
 import com.makotodecor.model.enums.ProductStatusEnum;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.Expressions;
@@ -60,6 +66,39 @@ public class QuerydslCriteriaUtils {
             criteria.getStatus()),
         () -> eqIfNotNull(() -> qUser.role.eq(com.makotodecor.model.enums.RoleEnum.valueOf(criteria.getRole())),
             criteria.getRole()));
+    return buildPredicate(expressions);
+  }
+
+  public static Optional<Predicate> buildImgTypeSearchPredicate(ImgTypePagedCriteria criteria) {
+    final QImgType qImgType = QImgType.imgType;
+
+    final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qImgType.name, criteria.getName()), criteria.getName()),
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qImgType.code, criteria.getCode()), criteria.getCode()),
+        () -> eqIfNotNull(
+            () -> qImgType.status.eq(com.makotodecor.model.enums.ImgTypeStatusEnum.valueOf(criteria.getStatus())),
+            criteria.getStatus()));
+    return buildPredicate(expressions);
+  }
+
+  public static Optional<Predicate> buildOrderSearchPredicate(OrderPagedCriteria criteria) {
+    final QOrder qOrder = QOrder.order;
+
+    final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
+        () -> eqIfNotNull(() -> qOrder.user().id.eq(criteria.getUserId()), criteria.getUserId()),
+        () -> eqIfNotNull(
+            () -> qOrder.status.eq(com.makotodecor.model.enums.OrderStatusEnum.valueOf(criteria.getStatus())),
+            criteria.getStatus()));
+    return buildPredicate(expressions);
+  }
+
+  public static Optional<Predicate> buildImgSearchPredicate(ImgPagedCriteria criteria) {
+    final QImg qImg = QImg.img;
+
+    final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
+        () -> eqIfNotNull(() -> qImg.imgType().id.eq(criteria.getImgTypeId()), criteria.getImgTypeId()),
+        () -> eqIfNotNull(() -> qImg.product().id.eq(criteria.getProductId()), criteria.getProductId()),
+        () -> eqIfNotNull(() -> qImg.isDefault.eq(criteria.getIsDefault()), criteria.getIsDefault()));
     return buildPredicate(expressions);
   }
 

@@ -7,6 +7,7 @@ import com.makotodecor.exceptions.base.ErrorMessage;
 import com.makotodecor.model.ImageUploadResponse;
 import com.makotodecor.model.MultipleImageUploadResponse;
 import com.makotodecor.service.FileUploadService;
+import com.makotodecor.util.FileValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +33,7 @@ public class FileUploadServiceImpl implements FileUploadService {
   public ImageUploadResponse uploadFile(MultipartFile file, String folder) {
     log.info("Uploading file to Cloudinary: {} to folder: {}", file.getOriginalFilename(), folder);
 
-    validateFile(file);
+    FileValidationUtils.validateFile(file);
 
     try {
       String fullPath = buildFolderPath(folder);
@@ -55,9 +56,7 @@ public class FileUploadServiceImpl implements FileUploadService {
   public MultipleImageUploadResponse uploadMultipleFiles(List<MultipartFile> files, String folder) {
     log.info("Uploading {} files to Cloudinary folder: {}", files.size(), folder);
 
-    if (files == null || files.isEmpty()) {
-      throw new FileUploadException(ErrorMessage.FILE_NO_FILES_PROVIDED);
-    }
+    FileValidationUtils.validateFiles(files);
 
     List<ImageUploadResponse> successfulUploads = new ArrayList<>();
     int failedCount = 0;
@@ -119,18 +118,6 @@ public class FileUploadServiceImpl implements FileUploadService {
     if (failCount > 0 && successCount == 0) {
       throw new FileUploadException(ErrorMessage.FILE_UPLOAD_FAILED);
     }
-  }
-
-  private void validateFile(MultipartFile file) {
-    if (file.isEmpty()) {
-      throw new FileUploadException(ErrorMessage.FILE_EMPTY);
-    }
-
-    String contentType = file.getContentType();
-    if (contentType == null || !contentType.startsWith("image/")) {
-      throw new FileUploadException(ErrorMessage.FILE_INVALID_TYPE);
-    }
-
   }
 
   private ImageUploadResponse buildImageUploadResponse(Map<?, ?> uploadResult) {

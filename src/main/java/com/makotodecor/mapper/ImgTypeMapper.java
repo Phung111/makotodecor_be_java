@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.makotodecor.model.CreateImgTypeRequest;
+import com.makotodecor.model.ImgTypeItemResponse;
 import com.makotodecor.model.ImgTypeResponse;
 import com.makotodecor.model.UpdateImgTypeRequest;
 import com.makotodecor.model.entity.ImgType;
@@ -15,6 +16,17 @@ public interface ImgTypeMapper {
   // @Mapping(target = "status", expression =
   // "java(mapStatusToDto(imgType.getStatus()))")
   ImgTypeResponse toImgTypeResponse(ImgType imgType);
+
+  @Mapping(target = "status", expression = "java(mapStatusToDto(imgType.getStatus()))")
+  ImgTypeItemResponse toImgTypeItemResponse(ImgType imgType);
+
+  default com.makotodecor.model.ImgTypeStatusEnum mapStatusToDto(
+      com.makotodecor.model.enums.ImgTypeStatusEnum status) {
+    if (status == null) {
+      return null;
+    }
+    return com.makotodecor.model.ImgTypeStatusEnum.valueOf(status.name());
+  }
 
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "createdAt", ignore = true)

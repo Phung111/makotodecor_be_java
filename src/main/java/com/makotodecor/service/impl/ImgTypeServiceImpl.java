@@ -5,18 +5,24 @@ import com.makotodecor.exceptions.base.ErrorMessage;
 import com.makotodecor.mapper.ImgTypeMapper;
 import com.makotodecor.model.CreateImgTypeRequest;
 import com.makotodecor.model.ImgTypeResponse;
+import com.makotodecor.model.ImgTypesPagedResponse;
 import com.makotodecor.model.UpdateImgTypeRequest;
 import com.makotodecor.model.UpdateImgTypesStatusRequest;
+import com.makotodecor.model.dto.ImgTypePagedCriteria;
 import com.makotodecor.model.entity.ImgType;
 import com.makotodecor.model.enums.ImgTypeStatusEnum;
 import com.makotodecor.repository.ImgTypeRepository;
 import com.makotodecor.service.ImgTypeService;
+import com.makotodecor.util.PaginationUtils;
+import com.makotodecor.util.QuerydslCriteriaUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +34,8 @@ public class ImgTypeServiceImpl implements ImgTypeService {
   private final ImgTypeRepository imgTypeRepository;
   private final ImgTypeMapper imgTypeMapper;
 
+  private static final Set<String> IMGTYPE_SORTABLE_COLUMNS = Set.of("id", "name", "code", "status", "createdAt", "updatedAt");
+
   @Override
   public List<ImgTypeResponse> getAllImgTypes() {
     log.debug("Fetching all image types");
@@ -36,6 +44,29 @@ public class ImgTypeServiceImpl implements ImgTypeService {
         .stream()
         .map(imgTypeMapper::toImgTypeResponse)
         .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ImgTypesPagedResponse getImgTypesPaged(ImgTypePagedCriteria criteria) {
+    var sortCriteria = PaginationUtils.parseSortCriteria(criteria.getOrderBy());
+    PaginationUtils.validateSortColumns(sortCriteria, IMGTYPE_SORTABLE_COLUMNS);
+
+    var pageable = PageRequest
+        .of(criteria.getPage(), criteria.getSize())
+        .withSort(sortCriteria);
+
+    var predicate = QuerydslCriteriaUtils.buildImgTypeSearchPredicate(criteria)
+        .orElse(QuerydslCriteriaUtils.truePredicate());
+
+    var pageResponse = imgTypeRepository.findAll(predicate, pageable);
+
+    return ImgTypesPagedResponse.builder()
+        .pageInfo(PaginationUtils.toPageInfo(pageResponse))
+        .items(pageResponse.getContent().stream()
+            .map(imgTypeMapper::toImgTypeItemResponse)
+            .toList())
+        .build();
   }
 
   @Override

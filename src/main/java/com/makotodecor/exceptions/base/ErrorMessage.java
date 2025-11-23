@@ -47,6 +47,9 @@ public enum ErrorMessage {
   USER_NOT_FOUND("U001", "user.not.found"),
   USER_HAS_ORDERS("U002", "user.has.orders"),
 
+  // Order errors
+  ORDER_NOT_FOUND("O001", "order.not.found"),
+
   // General errors
   ITEM_NOT_FOUND("G001", "item.not.found"),
 
