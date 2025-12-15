@@ -39,6 +39,14 @@ public class CartItem {
   @JoinColumn(name = "product_id", nullable = false)
   private Product product;
 
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "size_id")
+  private Size size;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "color_id")
+  private Color color;
+
   @Column(name = "created_at", nullable = false)
   private ZonedDateTime createdAt;
 

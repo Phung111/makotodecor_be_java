@@ -117,6 +117,8 @@ CREATE TABLE cart_items (
     price BIGINT NOT NULL,
     discount BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
+    size_id BIGINT,
+    color_id BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ
 );
@@ -124,6 +126,7 @@ CREATE TABLE cart_items (
 -- Create orders table
 CREATE TABLE orders (
     id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(255) UNIQUE NOT NULL,
     user_id BIGINT UNIQUE NOT NULL,
     status order_status NOT NULL DEFAULT 'NEW',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -207,6 +210,16 @@ FOREIGN KEY (cart_id) REFERENCES carts(id);
 ALTER TABLE cart_items 
 ADD CONSTRAINT fk_cart_items_product 
 FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- Cart Items to Sizes
+ALTER TABLE cart_items 
+ADD CONSTRAINT fk_cart_items_size 
+FOREIGN KEY (size_id) REFERENCES sizes(id);
+
+-- Cart Items to Colors
+ALTER TABLE cart_items 
+ADD CONSTRAINT fk_cart_items_color 
+FOREIGN KEY (color_id) REFERENCES colors(id);
 
 -- Orders to Users
 ALTER TABLE orders 

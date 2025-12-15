@@ -1,7 +1,10 @@
 package com.makotodecor.mapper;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.makotodecor.model.ImageInfo;
 import com.makotodecor.model.ProductColorRequest;
@@ -26,6 +29,8 @@ public interface ProductMapper {
   @Mapping(target = "minPrice", expression = "java(getMinPrice(product))")
   @Mapping(target = "finalPrice", expression = "java(getFinalPrice(product))")
   @Mapping(target = "sold", expression = "java(getTotalSold(product))")
+  @Mapping(target = "sizeId", expression = "java(toJsonNullable(getMinPriceSizeIdValue(product)))")
+  @Mapping(target = "colorId", expression = "java(toJsonNullable(getFirstColorIdValue(product)))")
   ProductItemResponse toProductItemResponse(Product product);
 
   @Mapping(target = "status", expression = "java(mapStatusToDto(product.getStatus()))")
@@ -232,5 +237,46 @@ public interface ProductMapper {
     Long sold = product.getSold() == null ? 0L : product.getSold();
     Long baseSold = product.getBaseSold() == null ? 0L : product.getBaseSold();
     return sold + baseSold;
+  }
+
+  default Long getMinPriceSizeIdValue(Product product) {
+    if (product == null || product.getSizes() == null || product.getSizes().isEmpty()) {
+      return null;
+    }
+    return product.getSizes().stream()
+        .filter(Objects::nonNull)
+        .filter(size -> size.getPrice() != null)
+        .min(Comparator.comparing(Size::getPrice))
+        .map(Size::getId)
+        .orElse(null);
+  }
+
+  default Long getFirstColorIdValue(Product product) {
+    if (product == null || product.getColors() == null || product.getColors().isEmpty()) {
+      return null;
+    }
+    return product.getColors().stream()
+        .filter(Objects::nonNull)
+        .map(Color::getId)
+        .findFirst()
+        .orElse(null);
+  }
+
+  default JsonNullable<Long> toJsonNullable(Long value) {
+    return value != null ? JsonNullable.of(value) : JsonNullable.undefined();
+  }
+
+  @AfterMapping
+  default void extractJsonNullableValues(@MappingTarget com.makotodecor.model.ProductItemResponse response) {
+    if (response.getSizeId() != null && response.getSizeId().isPresent()) {
+      response.setSizeId(JsonNullable.of(response.getSizeId().get()));
+    } else {
+      response.setSizeId(JsonNullable.undefined());
+    }
+    if (response.getColorId() != null && response.getColorId().isPresent()) {
+      response.setColorId(JsonNullable.of(response.getColorId().get()));
+    } else {
+      response.setColorId(JsonNullable.undefined());
+    }
   }
 }

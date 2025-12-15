@@ -29,6 +29,9 @@ public class Order {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(nullable = false, unique = true)
+  private String code;
+
   @Type(OrderStatusPsqlConvertedType.class)
   private OrderStatusEnum status;
 

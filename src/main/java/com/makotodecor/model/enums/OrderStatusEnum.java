@@ -7,6 +7,7 @@ public enum OrderStatusEnum implements PersistableEnum<String> {
 
   NEW("NEW"),
   DEPOSITED("DEPOSITED"),
+  PROCESSING("PROCESSING"),
   CANCELLED("CANCELLED"),
   COMPLETED("COMPLETED");
 

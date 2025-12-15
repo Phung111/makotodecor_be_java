@@ -53,6 +53,14 @@ public enum ErrorMessage {
   // General errors
   ITEM_NOT_FOUND("G001", "item.not.found"),
 
+  // Cart errors
+  CART_INVALID("CT001", "cart.invalid"),
+  CART_PRODUCT_ID_REQUIRED("CT002", "cart.product.id.required"),
+  CART_SIZE_ID_REQUIRED("CT003", "cart.size.id.required"),
+  CART_QUANTITY_REQUIRED("CT004", "cart.quantity.required"),
+  CART_QUANTITY_INVALID("CT005", "cart.quantity.invalid"),
+  CART_ITEM_ID_REQUIRED("CT006", "cart.item.id.required"),
+
   // Image errors
   IMAGE_NOT_FOUND("I001", "image.not.found"),
   IMAGE_URL_REQUIRED("I002", "image.url.required"),
