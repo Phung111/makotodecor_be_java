@@ -18,6 +18,7 @@ import com.makotodecor.model.entity.Img;
 import com.makotodecor.model.entity.Product;
 import com.makotodecor.model.entity.Size;
 import com.makotodecor.model.enums.ProductStatusEnum;
+import com.makotodecor.repository.CartItemRepository;
 import com.makotodecor.repository.CategoryRepository;
 import com.makotodecor.repository.ColorRepository;
 import com.makotodecor.repository.ImgRepository;
@@ -34,7 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.data.domain.PageRequest;
@@ -53,6 +56,7 @@ public class ProductServiceImpl implements ProductService {
   private final ImgRepository imgRepository;
   private final FileUploadService fileUploadService;
   private final ProductMapper productMapper;
+  private final CartItemRepository cartItemRepository;
 
   private static final Set<String> PRODUCT_SORTABLE_COLUMNS = Set.of("id", "name", "status", "price", "discount",
       "sold", "category", "updatedAt");
@@ -203,17 +207,111 @@ public class ProductServiceImpl implements ProductService {
     }
 
     if (request.getPrices() != null) {
-      sizeRepository.deleteByProductId(productId);
-      List<Size> sizes = createSizesFromPrices(request.getPrices(), product);
-      sizeRepository.saveAll(sizes);
+      final Product currentProduct = product; // ensure effectively final inside lambdas
+      // Preserve sizes that are still referenced in carts to avoid FK violations
+      List<Size> existingSizes = sizeRepository.findByProductId(productId);
+      Map<String, Size> existingByLabel = new HashMap<>();
+      existingSizes.forEach(size -> existingByLabel.put(size.getSize(), size));
+
+      List<Size> sizesToSave = new ArrayList<>();
+
+      request.getPrices().forEach(priceReq -> {
+        Size size = existingByLabel.remove(priceReq.getSize());
+        if (size == null) {
+          // New size
+          sizesToSave.add(productMapper.toSize(priceReq, currentProduct));
+        } else {
+          // Update existing size in place to keep references intact
+          // price in request is Double; convert to Long to match entity
+          size.setPrice(priceReq.getPrice() != null ? priceReq.getPrice().longValue() : null);
+          size.setSize(priceReq.getSize());
+          size.setProduct(currentProduct);
+          sizesToSave.add(size);
+        }
+      });
+
+      // Delete sizes that are no longer present only when not referenced in carts
+      if (!existingByLabel.isEmpty()) {
+        existingByLabel.values().forEach(size -> {
+          if (size.getId() != null && cartItemRepository.existsBySizeId(size.getId())) {
+            log.warn("Skip deleting size {} for product {} because it is referenced in cart items",
+                size.getId(), productId);
+          } else {
+            sizeRepository.delete(size);
+          }
+        });
+      }
+
+      if (!sizesToSave.isEmpty()) {
+        sizeRepository.saveAll(sizesToSave);
+      }
     }
 
+    // Handle colors: update in place, avoid deleting colors referenced by carts
+    List<Color> colorsToPersist = new ArrayList<>();
     if (request.getColors() != null) {
-      // Remove old colors first
-      colorRepository.deleteByProductId(productId);
+      // Map existing colors by name (or id if present). Prefer id when provided.
+      List<Color> existingColors = colorRepository.findByProductId(productId);
+      Map<Long, Color> existingById = new HashMap<>();
+      Map<String, Color> existingByName = new HashMap<>();
+      existingColors.forEach(color -> {
+        if (color.getId() != null) {
+          existingById.put(color.getId(), color);
+        }
+        if (color.getName() != null) {
+          existingByName.put(color.getName(), color);
+        }
+      });
+
+      request.getColors().forEach(colorReq -> {
+        Color existing = null;
+        if (colorReq.getId() != null) {
+          existing = existingById.remove(colorReq.getId());
+        }
+        if (existing == null && colorReq.getName() != null) {
+          existing = existingByName.remove(colorReq.getName());
+        }
+
+        if (existing == null) {
+          colorsToPersist.add(productMapper.toColor(colorReq, product));
+        } else {
+          // Update existing color fields to keep ID (and FK) intact
+          existing.setName(colorReq.getName());
+          existing.setColor(colorReq.getColorCode());
+          existing.setProduct(product);
+
+          // Update or replace color image
+          if (colorReq.getImage() != null) {
+            Img existingImg = existing.getImg();
+            if (existingImg == null) {
+              existing.setImg(productMapper.toImg(colorReq.getImage(), product, false, 0L));
+            } else {
+              existingImg.setUrl(colorReq.getImage().getUrl());
+              existingImg.setPublicId(colorReq.getImage().getPublicId());
+              existingImg.setImgType(
+                  productMapper.createImgTypeReference(colorReq.getImage().getImgTypeId()));
+              existingImg.setUpdatedAt(ZonedDateTime.now());
+            }
+          }
+
+          colorsToPersist.add(existing);
+        }
+      });
+
+      // Delete colors that are no longer present only if not referenced by cart items
+      if (!existingById.isEmpty()) {
+        existingById.values().forEach(color -> {
+          if (color.getId() != null && cartItemRepository.existsByColorId(color.getId())) {
+            log.warn("Skip deleting color {} for product {} because it is referenced in cart items",
+                color.getId(), productId);
+          } else {
+            colorRepository.delete(color);
+          }
+        });
+      }
     }
 
-    // Delete all old images BEFORE inserting new ones (including color images)
+    // Delete old images for product (non-color images) BEFORE inserting new ones
     List<Img> oldImages = imgRepository.findByProductId(productId);
     if (!oldImages.isEmpty()) {
       List<String> publicIds = oldImages.stream()
@@ -233,17 +331,16 @@ public class ProductServiceImpl implements ProductService {
       imgRepository.deleteByProductId(productId);
     }
 
-    // Now recreate colors and their images
-    if (request.getColors() != null) {
-      List<Color> colors = createColorsFromRequest(request.getColors(), product);
-      List<Img> colorImages = colors.stream()
+    // Persist color images first, then colors
+    if (!colorsToPersist.isEmpty()) {
+      List<Img> colorImages = colorsToPersist.stream()
           .map(Color::getImg)
           .filter(java.util.Objects::nonNull)
           .toList();
       if (!colorImages.isEmpty()) {
         imgRepository.saveAll(colorImages);
       }
-      colorRepository.saveAll(colors);
+      colorRepository.saveAll(colorsToPersist);
     }
 
     List<Img> images = new ArrayList<>();
@@ -267,9 +364,8 @@ public class ProductServiceImpl implements ProductService {
       imgRepository.saveAll(images);
     }
 
-    product = productRepository.save(product);
-
-    return productMapper.toProductDetailResponse(product);
+    final Product finalProduct = productRepository.save(product);
+    return productMapper.toProductDetailResponse(finalProduct);
   }
 
   @Override

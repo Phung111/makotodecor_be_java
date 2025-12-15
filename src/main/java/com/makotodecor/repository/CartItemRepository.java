@@ -16,4 +16,8 @@ import java.util.Optional;
 public interface CartItemRepository extends JpaRepository<CartItem, Long>, QuerydslPredicateExecutor<CartItem> {
 
   Optional<CartItem> findByCartAndProductAndSizeAndColor(Cart cart, Product product, Size size, Color color);
+
+  boolean existsBySizeId(Long sizeId);
+
+  boolean existsByColorId(Long colorId);
 }

@@ -5,10 +5,12 @@ import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
 
 import com.makotodecor.model.entity.Color;
+import java.util.List;
 
 @Repository
 public interface ColorRepository extends JpaRepository<Color, Long>, QuerydslPredicateExecutor<Color> {
 
   void deleteByProductId(Long productId);
 
+  List<Color> findByProductId(Long productId);
 }
