@@ -131,6 +131,13 @@ CREATE TABLE orders (
     code VARCHAR(255) UNIQUE NOT NULL,
     user_id BIGINT UNIQUE NOT NULL,
     status order_status NOT NULL DEFAULT 'NEW',
+    shipping_full_name VARCHAR(255),
+    shipping_phone VARCHAR(50),
+    shipping_address TEXT,
+    shipping_note TEXT,
+    payment_proof_url VARCHAR(500),
+    payment_proof_public_id VARCHAR(255),
+    total_price BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT
@@ -146,13 +153,25 @@ CREATE TABLE order_items (
     product_id BIGINT NOT NULL,
     color_name VARCHAR(100),
     size_name VARCHAR(50),
-    size_price BIGINT
+    size_price BIGINT,
+    order_group_id BIGINT,
+    variant_images JSONB
 );
 
 -- Add comments for order_items snapshot fields
 COMMENT ON COLUMN order_items.color_name IS 'Color name at time of order (snapshot)';
 COMMENT ON COLUMN order_items.size_name IS 'Size name at time of order (snapshot)';
 COMMENT ON COLUMN order_items.size_price IS 'Size price at time of order (snapshot)';
+
+-- Create order_groups table to group variants by product within an order
+CREATE TABLE order_groups (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    product_images JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- =============================================
 -- Add Foreign Key Constraints
@@ -242,6 +261,21 @@ FOREIGN KEY (order_id) REFERENCES orders(id);
 ALTER TABLE order_items 
 ADD CONSTRAINT fk_order_items_product 
 FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- Order Groups to Orders
+ALTER TABLE order_groups
+ADD CONSTRAINT fk_order_groups_order
+FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+
+-- Order Groups to Products
+ALTER TABLE order_groups
+ADD CONSTRAINT fk_order_groups_product
+FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- Order Items to Order Groups
+ALTER TABLE order_items
+ADD CONSTRAINT fk_order_items_order_group
+FOREIGN KEY (order_group_id) REFERENCES order_groups(id) ON DELETE CASCADE;
 
 CREATE INDEX idx_imgs_img_type_id ON imgs(img_type_id);
 

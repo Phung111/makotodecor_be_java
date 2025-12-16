@@ -24,6 +24,10 @@ public class OrderItem {
   @JoinColumn(name = "order_id", nullable = false)
   private Order order;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "order_group_id")
+  private OrderGroup orderGroup;
+
   @Column(nullable = false)
   private Long quantity;
 
@@ -45,4 +49,11 @@ public class OrderItem {
 
   @Column(name = "size_price")
   private Long sizePrice;
+
+  /**
+   * JSONB column storing variant images snapshot as an array of image objects.
+   * Stored as raw JSON string to keep mapping simple.
+   */
+  @Column(name = "variant_images", columnDefinition = "jsonb")
+  private String variantImages;
 }

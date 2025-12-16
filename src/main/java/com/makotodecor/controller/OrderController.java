@@ -1,5 +1,6 @@
 package com.makotodecor.controller;
 
+import com.makotodecor.model.CreateOrderRequest;
 import com.makotodecor.model.OrderDetailResponse;
 import com.makotodecor.model.OrdersPagedResponse;
 import com.makotodecor.model.UpdateOrderStatusRequest;
@@ -8,7 +9,8 @@ import com.makotodecor.service.OrderService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
 @Controller
@@ -42,5 +44,20 @@ public class OrderController implements OrderServiceApi {
   public ResponseEntity<String> _updateOrderStatus(UpdateOrderStatusRequest request) {
     orderService.updateOrderStatus(request);
     return ResponseEntity.ok("Order status updated successfully");
+  }
+
+  @Override
+  // @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<OrderDetailResponse> _placeOrder(CreateOrderRequest request) {
+    String username = getCurrentUsername();
+    return ResponseEntity.ok(orderService.placeOrder(request, username));
+  }
+
+  private String getCurrentUsername() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || !authentication.isAuthenticated()) {
+      throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException("User not authenticated");
+    }
+    return authentication.getName();
   }
 }

@@ -35,12 +35,36 @@ public class Order {
   @Type(OrderStatusPsqlConvertedType.class)
   private OrderStatusEnum status;
 
+  @Column(name = "shipping_full_name")
+  private String shippingFullName;
+
+  @Column(name = "shipping_phone")
+  private String shippingPhone;
+
+  @Column(name = "shipping_address")
+  private String shippingAddress;
+
+  @Column(name = "shipping_note")
+  private String shippingNote;
+
+  @Column(name = "payment_proof_url")
+  private String paymentProofUrl;
+
+  @Column(name = "payment_proof_public_id")
+  private String paymentProofPublicId;
+
+  @Column(name = "total_price")
+  private Long totalPrice;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
   @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
   private List<OrderItem> orderItems;
+
+  @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+  private List<OrderGroup> orderGroups;
 
   @Column(name = "created_at", nullable = false)
   @CreatedDate

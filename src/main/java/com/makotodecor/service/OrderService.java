@@ -1,5 +1,6 @@
 package com.makotodecor.service;
 
+import com.makotodecor.model.CreateOrderRequest;
 import com.makotodecor.model.OrderDetailResponse;
 import com.makotodecor.model.OrdersPagedResponse;
 import com.makotodecor.model.UpdateOrderStatusRequest;
@@ -12,4 +13,6 @@ public interface OrderService {
   OrderDetailResponse getOrder(Long orderId);
 
   void updateOrderStatus(UpdateOrderStatusRequest request);
+
+  OrderDetailResponse placeOrder(CreateOrderRequest request, String username);
 }
