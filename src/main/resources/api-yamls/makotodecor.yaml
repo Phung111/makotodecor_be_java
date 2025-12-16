@@ -2003,12 +2003,10 @@ components:
         sizeId:
           type: integer
           format: int64
-          nullable: true
           description: The ID of the size with minimum price (for quick add to cart).
         colorId:
           type: integer
           format: int64
-          nullable: true
           description: The ID of the first available color (for quick add to cart).
         updatedAt:
           type: string
@@ -2250,6 +2248,9 @@ components:
           example: 10
           minimum: 0
           maximum: 100
+        isActive:
+          type: boolean
+          description: Whether the size is active
 
     ProductColorRequest:
       type: object
@@ -2269,6 +2270,9 @@ components:
           pattern: '^#[0-9A-Fa-f]{6}$'
         image:
           $ref: '#/components/schemas/ImageInfo'
+        isActive:
+          type: boolean
+          description: Whether the color is active
 
     BaseProductRequest:
       type: object
@@ -2411,6 +2415,9 @@ components:
           type: integer
           format: int64
           description: Discount percentage
+        isActive:
+          type: boolean
+          description: Whether the size is active
 
     ProductColorResponse:
       type: object
@@ -2427,6 +2434,9 @@ components:
           description: Hex color code
         image:
           $ref: '#/components/schemas/ImageInfo'
+        isActive:
+          type: boolean
+          description: Whether the color is active
 
     # Category schemas
     CategoriesPagedResponse:
@@ -3003,6 +3013,10 @@ components:
           type: integer
           format: int64
           description: Size ID (price ID)
+        sizeId:
+          type: integer
+          format: int64
+          description: Size ID
         size:
           type: string
           description: Size name
@@ -3036,6 +3050,13 @@ components:
           type: integer
           format: int64
           description: Quantity of this variant in cart
+        sizeIsActive:
+          type: boolean
+          description: Whether the size is active
+        colorIsActive:
+          type: boolean
+          nullable: true
+          description: Whether the color is active (null if no color)
 
     CartProductGroupResponse:
       type: object

@@ -226,6 +226,9 @@ public class ProductServiceImpl implements ProductService {
           size.setPrice(priceReq.getPrice() != null ? priceReq.getPrice().longValue() : null);
           size.setSize(priceReq.getSize());
           size.setProduct(currentProduct);
+          if (priceReq.getIsActive() != null) {
+            size.setIsActive(priceReq.getIsActive());
+          }
           sizesToSave.add(size);
         }
       });
@@ -279,6 +282,9 @@ public class ProductServiceImpl implements ProductService {
           existing.setName(colorReq.getName());
           existing.setColor(colorReq.getColorCode());
           existing.setProduct(product);
+          if (colorReq.getIsActive() != null) {
+            existing.setIsActive(colorReq.getIsActive());
+          }
 
           // Update or replace color image
           if (colorReq.getImage() != null) {

@@ -49,8 +49,8 @@ public interface CartMapper {
         .map(entry -> toCartProductGroupResponse(entry.getKey(), entry.getValue()))
         .toList();
 
-    // Calculate item count as number of variants (cart items)
-    Long itemCount = (long) cart.getCartItems().size();
+    // Calculate item count as number of unique products (distinct productId)
+    Long itemCount = (long) groupedByProduct.size();
 
     return CartResponse.builder()
         .itemCount(itemCount)
@@ -83,18 +83,23 @@ public interface CartMapper {
           CartVariantResponse.CartVariantResponseBuilder builder = CartVariantResponse.builder()
               .id(first.getId())
               .priceId(size != null ? size.getId() : null)
+              .sizeId(size != null ? size.getId() : null)
               .size(size != null ? size.getSize() : null)
               .price(first.getPrice())
               .discount(first.getDiscount())
               .finalPrice(calculateFinalPrice(first.getPrice(), first.getDiscount()))
-              .quantity(totalQuantity);
+              .quantity(totalQuantity)
+              .sizeIsActive(size != null && size.getIsActive() != null ? size.getIsActive() : true);
 
           if (color != null) {
             builder
                 .colorId(JsonNullable.of(color.getId()))
                 .colorName(color.getName())
                 .colorCode(color.getColor())
-                .colorImage(getColorImage(color));
+                .colorImage(getColorImage(color))
+                .colorIsActive(JsonNullable.of(color.getIsActive() != null ? color.getIsActive() : true));
+          } else {
+            builder.colorIsActive(JsonNullable.undefined());
           }
 
           return builder.build();

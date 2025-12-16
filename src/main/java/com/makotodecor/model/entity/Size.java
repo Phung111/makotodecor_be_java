@@ -29,4 +29,8 @@ public class Size {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id", nullable = false)
   private Product product;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private Boolean isActive = true;
 }

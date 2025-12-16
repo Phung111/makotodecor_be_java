@@ -1,10 +1,7 @@
 package com.makotodecor.mapper;
 
-import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.makotodecor.model.ImageInfo;
 import com.makotodecor.model.ProductColorRequest;
@@ -29,8 +26,8 @@ public interface ProductMapper {
   @Mapping(target = "minPrice", expression = "java(getMinPrice(product))")
   @Mapping(target = "finalPrice", expression = "java(getFinalPrice(product))")
   @Mapping(target = "sold", expression = "java(getTotalSold(product))")
-  @Mapping(target = "sizeId", expression = "java(toJsonNullable(getMinPriceSizeIdValue(product)))")
-  @Mapping(target = "colorId", expression = "java(toJsonNullable(getFirstColorIdValue(product)))")
+  @Mapping(target = "sizeId", expression = "java(getMinPriceSizeIdValue(product))")
+  @Mapping(target = "colorId", expression = "java(getFirstColorIdValue(product))")
   ProductItemResponse toProductItemResponse(Product product);
 
   @Mapping(target = "status", expression = "java(mapStatusToDto(product.getStatus()))")
@@ -48,6 +45,7 @@ public interface ProductMapper {
   @Mapping(target = "size", source = "request.size")
   @Mapping(target = "price", expression = "java(request.getPrice().longValue())")
   @Mapping(target = "product", source = "product")
+  @Mapping(target = "isActive", source = "request.isActive", defaultValue = "true")
   Size toSize(ProductPriceRequest request, Product product);
 
   @Mapping(target = "id", ignore = true)
@@ -55,6 +53,7 @@ public interface ProductMapper {
   @Mapping(target = "color", source = "request.colorCode")
   @Mapping(target = "img", expression = "java(toColorImg(request.getImage(), product))")
   @Mapping(target = "product", source = "product")
+  @Mapping(target = "isActive", source = "request.isActive", defaultValue = "true")
   Color toColor(ProductColorRequest request, Product product);
 
   @Mapping(target = "id", ignore = true)
@@ -76,6 +75,7 @@ public interface ProductMapper {
     request.setId(size.getId());
     request.setSize(size.getSize());
     request.setPrice(size.getPrice() != null ? size.getPrice().doubleValue() : null);
+    request.setIsActive(size.getIsActive() != null ? size.getIsActive() : true);
     return request;
   }
 
@@ -83,6 +83,7 @@ public interface ProductMapper {
   @Mapping(target = "name", ignore = true)
   @Mapping(target = "colorCode", source = "color")
   @Mapping(target = "image", expression = "java(mapColorImage(color))")
+  @Mapping(target = "isActive", source = "isActive")
   ProductColorRequest toProductColorRequest(Color color);
 
   @Mapping(target = "url", source = "url")
@@ -95,6 +96,7 @@ public interface ProductMapper {
   @Mapping(target = "name", source = "name")
   @Mapping(target = "colorCode", source = "color")
   @Mapping(target = "image", expression = "java(mapColorImage(color))")
+  @Mapping(target = "isActive", source = "isActive")
   com.makotodecor.model.ProductColorResponse toProductColorResponse(Color color);
 
   default com.makotodecor.model.ProductPriceResponse toProductPriceResponse(Size size) {
@@ -105,6 +107,7 @@ public interface ProductMapper {
     response.setId(size.getId());
     response.setSize(size.getSize());
     response.setPrice(size.getPrice() != null ? size.getPrice() : null);
+    response.setIsActive(size.getIsActive() != null ? size.getIsActive() : true);
     return response;
   }
 
@@ -262,21 +265,4 @@ public interface ProductMapper {
         .orElse(null);
   }
 
-  default JsonNullable<Long> toJsonNullable(Long value) {
-    return value != null ? JsonNullable.of(value) : JsonNullable.undefined();
-  }
-
-  @AfterMapping
-  default void extractJsonNullableValues(@MappingTarget com.makotodecor.model.ProductItemResponse response) {
-    if (response.getSizeId() != null && response.getSizeId().isPresent()) {
-      response.setSizeId(JsonNullable.of(response.getSizeId().get()));
-    } else {
-      response.setSizeId(JsonNullable.undefined());
-    }
-    if (response.getColorId() != null && response.getColorId().isPresent()) {
-      response.setColorId(JsonNullable.of(response.getColorId().get()));
-    } else {
-      response.setColorId(JsonNullable.undefined());
-    }
-  }
 }

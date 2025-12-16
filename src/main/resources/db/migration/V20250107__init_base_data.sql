@@ -66,7 +66,8 @@ CREATE TABLE colors (
     name VARCHAR(255) NOT NULL,
     color VARCHAR(255) NOT NULL,
     img_id BIGINT,
-    product_id BIGINT NOT NULL
+    product_id BIGINT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Create sizes table
@@ -74,7 +75,8 @@ CREATE TABLE sizes (
     id BIGSERIAL PRIMARY KEY,
     size VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
-    product_id BIGINT NOT NULL
+    product_id BIGINT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Create img_types table
@@ -240,4 +242,10 @@ FOREIGN KEY (order_id) REFERENCES orders(id);
 ALTER TABLE order_items 
 ADD CONSTRAINT fk_order_items_product 
 FOREIGN KEY (product_id) REFERENCES products(id);
+
+CREATE INDEX idx_imgs_img_type_id ON imgs(img_type_id);
+
+CREATE INDEX idx_imgs_product_id ON imgs(product_id);
+
+CREATE INDEX idx_imgs_img_type_product ON imgs(img_type_id, product_id);
 
