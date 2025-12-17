@@ -35,23 +35,44 @@ public class OrderController implements OrderServiceApi {
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<OrderDetailResponse> _getOrder(Long orderId) {
     return ResponseEntity.ok(orderService.getOrder(orderId));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _updateOrderStatus(UpdateOrderStatusRequest request) {
     orderService.updateOrderStatus(request);
     return ResponseEntity.ok("Order status updated successfully");
   }
 
   @Override
-  // @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<OrderDetailResponse> _placeOrder(CreateOrderRequest request) {
     String username = getCurrentUsername();
     return ResponseEntity.ok(orderService.placeOrder(request, username));
+  }
+
+  @Override
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<OrdersPagedResponse> _getMyOrdersPaged(Integer page, Integer size, String orderBy,
+      String status) {
+    String username = getCurrentUsername();
+    var criteria = OrderPagedCriteria.builder()
+        .page(page)
+        .size(size)
+        .orderBy(orderBy)
+        .status(status)
+        .build();
+    return ResponseEntity.ok(orderService.getMyOrdersPaged(criteria, username));
+  }
+
+  @Override
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<OrderDetailResponse> _getMyOrder(Long orderId) {
+    String username = getCurrentUsername();
+    return ResponseEntity.ok(orderService.getMyOrder(orderId, username));
   }
 
   private String getCurrentUsername() {

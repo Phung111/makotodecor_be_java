@@ -1194,6 +1194,96 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # User-facing order endpoints
+  /v1/api/orders/my:
+    get:
+      tags:
+        - orderService
+      operationId: getMyOrdersPaged
+      summary: Get current user's orders paged
+      description: Get orders for the authenticated user (for /orders page)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/orderBy'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [NEW, DEPOSITED, CANCELLED, COMPLETED]
+      responses:
+        '200':
+          description: Orders paged retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdersPagedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/orders/my/{orderId}:
+    get:
+      tags:
+        - orderService
+      operationId: getMyOrder
+      summary: Get current user's order by id
+      description: Get order detail for the authenticated user (for /orders/{id} page)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order
+          example: 1
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Order does not belong to user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # Cart endpoints
   /v1/api/carts:
     get:

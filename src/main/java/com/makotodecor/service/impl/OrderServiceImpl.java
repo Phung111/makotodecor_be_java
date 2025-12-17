@@ -252,6 +252,80 @@ public class OrderServiceImpl implements OrderService {
     return orderMapper.toOrderDetailResponse(order);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public OrdersPagedResponse getMyOrdersPaged(OrderPagedCriteria criteria, String username) {
+    User user = findUserByUsername(username);
+
+    var sortCriteria = PaginationUtils.parseSortCriteria(criteria.getOrderBy());
+    PaginationUtils.validateSortColumns(sortCriteria, ORDER_SORTABLE_COLUMNS);
+
+    var pageable = PageRequest
+        .of(criteria.getPage(), criteria.getSize())
+        .withSort(sortCriteria);
+
+    // Build predicate with user filter
+    var criteriaWithUser = OrderPagedCriteria.builder()
+        .page(criteria.getPage())
+        .size(criteria.getSize())
+        .orderBy(criteria.getOrderBy())
+        .status(criteria.getStatus())
+        .userId(user.getId())
+        .build();
+
+    var predicate = QuerydslCriteriaUtils.buildOrderSearchPredicate(criteriaWithUser)
+        .orElse(QuerydslCriteriaUtils.truePredicate());
+
+    var pageResponse = orderRepository.findAll(predicate, pageable);
+
+    // Eager load orderItems and user to avoid lazy loading issues
+    var orders = pageResponse.getContent();
+    orders.forEach(order -> {
+      if (order.getOrderItems() != null) {
+        order.getOrderItems().size();
+        order.getOrderItems().forEach(item -> {
+          if (item.getProduct() != null) {
+            item.getProduct().getName();
+          }
+        });
+      }
+    });
+
+    return OrdersPagedResponse.builder()
+        .pageInfo(PaginationUtils.toPageInfo(pageResponse))
+        .items(orders.stream()
+            .map(orderMapper::toOrderItemResponse)
+            .toList())
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public OrderDetailResponse getMyOrder(Long orderId, String username) {
+    User user = findUserByUsername(username);
+    Order order = findOrderById(orderId);
+
+    // Verify the order belongs to the user
+    if (!order.getUser().getId().equals(user.getId())) {
+      throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
+    }
+
+    // Eager load orderItems and user
+    if (order.getOrderItems() != null) {
+      order.getOrderItems().size();
+      order.getOrderItems().forEach(item -> {
+        if (item.getProduct() != null) {
+          item.getProduct().getName();
+          if (item.getProduct().getCategory() != null) {
+            item.getProduct().getCategory().getName();
+          }
+        }
+      });
+    }
+
+    return orderMapper.toOrderDetailResponse(order);
+  }
+
   private Order findOrderById(Long orderId) {
     return orderRepository.findById(orderId)
         .orElseThrow(() -> new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND));
