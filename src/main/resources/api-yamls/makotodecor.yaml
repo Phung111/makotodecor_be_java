@@ -2396,10 +2396,11 @@ components:
           format: int64
         productName:
           type: string
-        productImages:
+        orderGroupImages:
           type: array
           items:
             $ref: '#/components/schemas/ImageInfo'
+          description: Images to save in order group (for reference/history)
         orderItems:
           type: array
           items:
@@ -3233,10 +3234,14 @@ components:
           format: int64
         productName:
           type: string
-        productImages:
+        productImage:
+          $ref: '#/components/schemas/ImageInfo'
+          description: Default product image (from product.img where isDefault = true)
+        orderGroupImages:
           type: array
           items:
             $ref: '#/components/schemas/ImageInfo'
+          description: Images saved in order group (for reference/history)
         orderItems:
           type: array
           items:

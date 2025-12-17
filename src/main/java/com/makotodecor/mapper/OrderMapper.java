@@ -42,7 +42,8 @@ public interface OrderMapper {
   @Mapping(target = "id", source = "orderGroup.id")
   @Mapping(target = "productId", source = "orderGroup.product.id")
   @Mapping(target = "productName", source = "orderGroup.productName")
-  @Mapping(target = "productImages", expression = "java(mapProductImages(orderGroup.getProductImages()))")
+  @Mapping(target = "productImage", expression = "java(mapProductDefaultImage(orderGroup.getProduct()))")
+  @Mapping(target = "orderGroupImages", expression = "java(mapOrderGroupImages(orderGroup.getOrderGroupImages()))")
   @Mapping(target = "orderItems", expression = "java(mapOrderItems(orderGroup.getOrderItems()))")
   OrderGroupResponse toOrderGroupResponse(OrderGroup orderGroup);
 
@@ -107,8 +108,25 @@ public interface OrderMapper {
         .toList();
   }
 
-  // Map product images from Img entities
-  default List<ImageInfo> mapProductImages(List<Img> images) {
+  // Map product's default image (isDefault = true)
+  default ImageInfo mapProductDefaultImage(com.makotodecor.model.entity.Product product) {
+    if (product == null || product.getImgs() == null) {
+      return null;
+    }
+    return product.getImgs().stream()
+        .filter(img -> Boolean.TRUE.equals(img.getIsDefault()))
+        .findFirst()
+        .map(img -> {
+          ImageInfo imageInfo = new ImageInfo();
+          imageInfo.setUrl(img.getUrl());
+          imageInfo.setPublicId(img.getPublicId());
+          return imageInfo;
+        })
+        .orElse(null);
+  }
+
+  // Map order group images from Img entities
+  default List<ImageInfo> mapOrderGroupImages(List<Img> images) {
     if (images == null) {
       return List.of();
     }

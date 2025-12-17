@@ -102,15 +102,27 @@ public class OrderServiceImpl implements OrderService {
   public OrderDetailResponse getOrder(Long orderId) {
     Order order = findOrderById(orderId);
 
-    // Eager load orderItems and user
-    if (order.getOrderItems() != null) {
-      order.getOrderItems().size();
-      order.getOrderItems().forEach(item -> {
-        if (item.getProduct() != null) {
-          item.getProduct().getName();
-          if (item.getProduct().getCategory() != null) {
-            item.getProduct().getCategory().getName();
+    // Eager load orderGroups, orderItems, product and product images
+    if (order.getOrderGroups() != null) {
+      order.getOrderGroups().forEach(group -> {
+        // Load orderGroupImages
+        if (group.getOrderGroupImages() != null) {
+          group.getOrderGroupImages().size();
+        }
+        // Load product and its default image
+        if (group.getProduct() != null) {
+          group.getProduct().getName();
+          if (group.getProduct().getImgs() != null) {
+            group.getProduct().getImgs().size();
           }
+        }
+        // Load orderItems and their variantImages
+        if (group.getOrderItems() != null) {
+          group.getOrderItems().forEach(item -> {
+            if (item.getVariantImages() != null) {
+              item.getVariantImages().size();
+            }
+          });
         }
       });
     }
@@ -181,10 +193,10 @@ public class OrderServiceImpl implements OrderService {
       // Save order group first to get ID
       orderGroupRepository.save(group);
 
-      // Create Img entities for productImages with type ORDER_GROUP
-      if (reqGroup.getProductImages() != null && !reqGroup.getProductImages().isEmpty()) {
+      // Create Img entities for orderGroupImages with type ORDER_GROUP
+      if (reqGroup.getOrderGroupImages() != null && !reqGroup.getOrderGroupImages().isEmpty()) {
         long priority = 1;
-        for (com.makotodecor.model.ImageInfo imgInfo : reqGroup.getProductImages()) {
+        for (com.makotodecor.model.ImageInfo imgInfo : reqGroup.getOrderGroupImages()) {
           Img img = Img.builder()
               .url(imgInfo.getUrl())
               .publicId(imgInfo.getPublicId())
@@ -310,15 +322,27 @@ public class OrderServiceImpl implements OrderService {
       throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
     }
 
-    // Eager load orderItems and user
-    if (order.getOrderItems() != null) {
-      order.getOrderItems().size();
-      order.getOrderItems().forEach(item -> {
-        if (item.getProduct() != null) {
-          item.getProduct().getName();
-          if (item.getProduct().getCategory() != null) {
-            item.getProduct().getCategory().getName();
+    // Eager load orderGroups, orderItems, product and product images
+    if (order.getOrderGroups() != null) {
+      order.getOrderGroups().forEach(group -> {
+        // Load orderGroupImages
+        if (group.getOrderGroupImages() != null) {
+          group.getOrderGroupImages().size();
+        }
+        // Load product and its default image
+        if (group.getProduct() != null) {
+          group.getProduct().getName();
+          if (group.getProduct().getImgs() != null) {
+            group.getProduct().getImgs().size();
           }
+        }
+        // Load orderItems and their variantImages
+        if (group.getOrderItems() != null) {
+          group.getOrderItems().forEach(item -> {
+            if (item.getVariantImages() != null) {
+              item.getVariantImages().size();
+            }
+          });
         }
       });
     }
