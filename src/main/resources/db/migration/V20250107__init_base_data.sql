@@ -135,7 +135,7 @@ CREATE TABLE cart_items (
 CREATE TABLE orders (
     id BIGSERIAL PRIMARY KEY,
     code VARCHAR(255) UNIQUE NOT NULL,
-    user_id BIGINT UNIQUE NOT NULL,
+    user_id BIGINT NOT NULL,
     status order_status NOT NULL DEFAULT 'NEW',
     shipping_full_name VARCHAR(255),
     shipping_phone VARCHAR(50),
