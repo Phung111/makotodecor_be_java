@@ -2271,10 +2271,11 @@ components:
       properties:
         shippingInfo:
           $ref: '#/components/schemas/CreateOrderShippingInfo'
-        checkoutItems:
+        orderGroups:
           type: array
           items:
-            $ref: '#/components/schemas/CreateOrderCheckoutItem'
+            $ref: '#/components/schemas/CreateOrderGroup'
+          description: List of product groups with their variants
         paymentProof:
           $ref: '#/components/schemas/ImageInfo'
         totalPrice:
@@ -2296,12 +2297,10 @@ components:
         note:
           type: string
 
-    CreateOrderCheckoutItem:
+    CreateOrderGroup:
       type: object
+      description: A product group containing multiple variants (orderItems)
       properties:
-        id:
-          type: integer
-          format: int64
         productId:
           type: integer
           format: int64
@@ -2311,9 +2310,53 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ImageInfo'
-        variant:
-          $ref: '#/components/schemas/CreateOrderVariant'
+        orderItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateOrderItem'
+          description: List of variants for this product
 
+    CreateOrderItem:
+      type: object
+      description: A single variant/item within an order group
+      properties:
+        cartItemId:
+          type: integer
+          format: int64
+          description: Original cart item ID
+        sizeId:
+          type: integer
+          format: int64
+        sizeName:
+          type: string
+        colorId:
+          type: integer
+          format: int64
+        colorName:
+          type: string
+        colorCode:
+          type: string
+        priceId:
+          type: integer
+          format: int64
+        price:
+          type: integer
+          format: int64
+        discount:
+          type: integer
+          format: int64
+        finalPrice:
+          type: integer
+          format: int64
+        quantity:
+          type: integer
+          format: int64
+        variantImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+
+    # Legacy schema - kept for backward compatibility
     CreateOrderVariant:
       type: object
       properties:
@@ -3059,14 +3102,25 @@ components:
           $ref: '#/components/schemas/OrderStatusEnum'
         user:
           $ref: '#/components/schemas/UserItemResponse'
-        orderItems:
+        shippingInfo:
+          $ref: '#/components/schemas/CreateOrderShippingInfo'
+          description: Shipping information
+        orderGroups:
           type: array
           items:
-            $ref: '#/components/schemas/OrderItemDetailResponse'
+            $ref: '#/components/schemas/OrderGroupResponse'
+          description: List of product groups with their variants
+        paymentProof:
+          $ref: '#/components/schemas/ImageInfo'
+          description: Payment proof image
+        totalPrice:
+          type: integer
+          format: int64
+          description: Total price
         total:
           type: integer
           format: int64
-          description: Total amount
+          description: Total amount (alias for totalPrice)
         createdAt:
           type: string
           format: date-time
@@ -3076,6 +3130,29 @@ components:
           format: date-time
           description: Updated timestamp
 
+    OrderGroupResponse:
+      type: object
+      description: A product group containing multiple order items
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Order group ID
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        productImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+        orderItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDetailResponse'
+          description: List of variants for this product
+
     OrderItemDetailResponse:
       type: object
       properties:
@@ -3083,30 +3160,53 @@ components:
           type: integer
           format: int64
           description: Order item ID
-        product:
-          $ref: '#/components/schemas/ProductItemResponse'
-        quantity:
+        cartItemId:
           type: integer
           format: int64
-          description: Quantity
+          description: Original cart item ID
+        sizeId:
+          type: integer
+          format: int64
+        sizeName:
+          type: string
+          description: Size name
+        colorId:
+          type: integer
+          format: int64
+        colorName:
+          type: string
+          description: Color name
+        colorCode:
+          type: string
+          description: Color hex code
+        priceId:
+          type: integer
+          format: int64
         price:
           type: integer
           format: int64
-          description: Price per item
+          description: Original price per item
         discount:
           type: integer
           format: int64
           description: Discount percentage
+        finalPrice:
+          type: integer
+          format: int64
+          description: Final price after discount
+        quantity:
+          type: integer
+          format: int64
+          description: Quantity
         subtotal:
           type: integer
           format: int64
-          description: Subtotal (price * quantity * (100 - discount) / 100)
-        colorName:
-          type: string
-          description: Color name
-        sizeName:
-          type: string
-          description: Size name
+          description: Subtotal (finalPrice * quantity)
+        variantImages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInfo'
+          description: Images for this variant
 
     UpdateOrderStatusRequest:
       type: object

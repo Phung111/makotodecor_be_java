@@ -8,12 +8,16 @@ import com.makotodecor.model.OrderDetailResponse;
 import com.makotodecor.model.OrdersPagedResponse;
 import com.makotodecor.model.UpdateOrderStatusRequest;
 import com.makotodecor.model.dto.OrderPagedCriteria;
+import com.makotodecor.model.entity.Img;
+import com.makotodecor.model.entity.ImgType;
 import com.makotodecor.model.entity.Order;
 import com.makotodecor.model.entity.OrderGroup;
 import com.makotodecor.model.entity.OrderItem;
 import com.makotodecor.model.entity.Product;
 import com.makotodecor.model.entity.User;
 import com.makotodecor.model.enums.OrderStatusEnum;
+import com.makotodecor.repository.ImgRepository;
+import com.makotodecor.repository.ImgTypeRepository;
 import com.makotodecor.repository.OrderGroupRepository;
 import com.makotodecor.repository.OrderItemRepository;
 import com.makotodecor.repository.OrderRepository;
@@ -28,10 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,11 @@ public class OrderServiceImpl implements OrderService {
   private final ProductRepository productRepository;
   private final OrderGroupRepository orderGroupRepository;
   private final OrderItemRepository orderItemRepository;
+  private final ImgRepository imgRepository;
+  private final ImgTypeRepository imgTypeRepository;
+
+  private static final String ORDER_GROUP_IMG_TYPE_CODE = "ORDER_GROUP";
+  private static final String ORDER_ITEM_IMG_TYPE_CODE = "ORDER_ITEM";
 
   private static final Set<String> ORDER_SORTABLE_COLUMNS = Set.of("id", "status", "createdAt", "updatedAt");
 
@@ -130,6 +137,12 @@ public class OrderServiceImpl implements OrderService {
   public OrderDetailResponse placeOrder(CreateOrderRequest request, String username) {
     User user = findUserByUsername(username);
 
+    // Fetch image types for ORDER_GROUP and ORDER_ITEM
+    ImgType orderGroupImgType = imgTypeRepository.findByCode(ORDER_GROUP_IMG_TYPE_CODE)
+        .orElseThrow(() -> new WebBadRequestException(ErrorMessage.ITEM_NOT_FOUND));
+    ImgType orderItemImgType = imgTypeRepository.findByCode(ORDER_ITEM_IMG_TYPE_CODE)
+        .orElseThrow(() -> new WebBadRequestException(ErrorMessage.ITEM_NOT_FOUND));
+
     // Create base order
     final Order order = Order.builder()
         .code(generateOrderCode())
@@ -145,76 +158,89 @@ public class OrderServiceImpl implements OrderService {
 
     orderRepository.save(order);
 
-    if (request.getCheckoutItems() == null || request.getCheckoutItems().isEmpty()) {
+    if (request.getOrderGroups() == null || request.getOrderGroups().isEmpty()) {
       throw new WebBadRequestException(ErrorMessage.ITEM_NOT_FOUND);
     }
 
-    // Group checkout items by productId
-    Map<Long, List<com.makotodecor.model.CreateOrderCheckoutItem>> groupedByProduct = request.getCheckoutItems().stream()
-        .collect(Collectors.groupingBy(com.makotodecor.model.CreateOrderCheckoutItem::getProductId));
-
     List<OrderGroup> orderGroups = new ArrayList<>();
     List<OrderItem> orderItems = new ArrayList<>();
+    List<Img> allImages = new ArrayList<>();
 
-    groupedByProduct.forEach((productId, items) -> {
-      Product product = productRepository.findById(productId)
+    for (com.makotodecor.model.CreateOrderGroup reqGroup : request.getOrderGroups()) {
+      Product product = productRepository.findById(reqGroup.getProductId())
           .orElseThrow(() -> new WebBadRequestException(ErrorMessage.PRODUCT_NOT_FOUND));
-
-      com.makotodecor.model.CreateOrderCheckoutItem first = items.get(0);
-
-      String productImagesJson = null;
-      try {
-        if (first.getProductImages() != null && !first.getProductImages().isEmpty()) {
-          productImagesJson = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
-              .writeValueAsString(first.getProductImages());
-        }
-      } catch (Exception e) {
-        // ignore serialization error, keep null
-      }
 
       OrderGroup group = OrderGroup.builder()
           .order(order)
           .product(product)
-          .productName(first.getProductName())
-          .productImages(productImagesJson)
+          .productName(reqGroup.getProductName())
           .createdAt(ZonedDateTime.now())
           .build();
       orderGroups.add(group);
 
-      items.forEach(ci -> {
-        com.makotodecor.model.CreateOrderVariant v = ci.getVariant();
-        if (v == null) {
-          return;
-        }
+      // Save order group first to get ID
+      orderGroupRepository.save(group);
 
-        String variantImagesJson = null;
-        try {
-          if (v.getVariantImages() != null && !v.getVariantImages().isEmpty()) {
-            variantImagesJson = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
-                .writeValueAsString(v.getVariantImages());
+      // Create Img entities for productImages with type ORDER_GROUP
+      if (reqGroup.getProductImages() != null && !reqGroup.getProductImages().isEmpty()) {
+        long priority = 1;
+        for (com.makotodecor.model.ImageInfo imgInfo : reqGroup.getProductImages()) {
+          Img img = Img.builder()
+              .url(imgInfo.getUrl())
+              .publicId(imgInfo.getPublicId())
+              .priority(priority++)
+              .isDefault(priority == 2) // First image is default
+              .imgType(orderGroupImgType)
+              .orderGroup(group)
+              .createdAt(ZonedDateTime.now())
+              .build();
+          allImages.add(img);
+        }
+      }
+
+      // Process order items for this group
+      if (reqGroup.getOrderItems() != null) {
+        for (com.makotodecor.model.CreateOrderItem reqItem : reqGroup.getOrderItems()) {
+          OrderItem orderItem = OrderItem.builder()
+              .order(order)
+              .orderGroup(group)
+              .product(product)
+              .quantity(reqItem.getQuantity() != null ? reqItem.getQuantity() : 1L)
+              .price(reqItem.getPrice())
+              .discount(reqItem.getDiscount() != null ? reqItem.getDiscount() : 0L)
+              .colorName(reqItem.getColorName())
+              .sizeName(reqItem.getSizeName())
+              .sizePrice(reqItem.getPrice())
+              .build();
+          orderItems.add(orderItem);
+
+          // Save order item first to get ID
+          orderItemRepository.save(orderItem);
+
+          // Create Img entities for variantImages with type ORDER_ITEM
+          if (reqItem.getVariantImages() != null && !reqItem.getVariantImages().isEmpty()) {
+            long priority = 1;
+            for (com.makotodecor.model.ImageInfo imgInfo : reqItem.getVariantImages()) {
+              Img img = Img.builder()
+                  .url(imgInfo.getUrl())
+                  .publicId(imgInfo.getPublicId())
+                  .priority(priority++)
+                  .isDefault(priority == 2) // First image is default
+                  .imgType(orderItemImgType)
+                  .orderItem(orderItem)
+                  .createdAt(ZonedDateTime.now())
+                  .build();
+              allImages.add(img);
+            }
           }
-        } catch (Exception e) {
-          // ignore
         }
+      }
+    }
 
-        OrderItem orderItem = OrderItem.builder()
-            .order(order)
-            .orderGroup(group)
-            .product(product)
-            .quantity(v.getQuantity() != null ? v.getQuantity() : 1L)
-            .price(v.getPrice())
-            .discount(v.getDiscount() != null ? v.getDiscount() : 0L)
-            .colorName(v.getColorName())
-            .sizeName(v.getSize())
-            .sizePrice(v.getPrice())
-            .variantImages(variantImagesJson)
-            .build();
-        orderItems.add(orderItem);
-      });
-    });
-
-    orderGroupRepository.saveAll(orderGroups);
-    orderItemRepository.saveAll(orderItems);
+    // Save all images
+    if (!allImages.isEmpty()) {
+      imgRepository.saveAll(allImages);
+    }
 
     // Calculate total from items to avoid trusting client
     Long total = orderItems.stream()

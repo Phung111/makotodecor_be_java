@@ -3,12 +3,14 @@
 -- Description: Insert initial base data (img_types, images, categories)
 -- =====================================================
 
--- Insert ImgTypes (DEFAULT, OTHER, DETAIL, COLOR)
+-- Insert ImgTypes (DEFAULT, OTHER, DETAIL, COLOR, ORDER_GROUP, ORDER_ITEM)
 INSERT INTO img_types (name, code, status, created_at) VALUES
 ('Mặc định', 'DEFAULT', 'ACTIVE', CURRENT_TIMESTAMP),
 ('Khác', 'OTHER', 'ACTIVE', CURRENT_TIMESTAMP),
 ('Chi tiết', 'DETAIL', 'ACTIVE', CURRENT_TIMESTAMP),
-('Màu sắc', 'COLOR', 'ACTIVE', CURRENT_TIMESTAMP);
+('Màu sắc', 'COLOR', 'ACTIVE', CURRENT_TIMESTAMP),
+('Hình ảnh nhóm đơn hàng', 'ORDER_GROUP', 'ACTIVE', CURRENT_TIMESTAMP),
+('Hình ảnh chi tiết đơn hàng', 'ORDER_ITEM', 'ACTIVE', CURRENT_TIMESTAMP);
 
 -- Insert Images for 5 main categories
 INSERT INTO imgs (priority, url, public_id, title, subtitle, is_default, img_type_id, created_at) VALUES

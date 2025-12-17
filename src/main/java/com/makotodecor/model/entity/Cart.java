@@ -5,7 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "carts")
@@ -27,5 +27,5 @@ public class Cart {
   private User user;
 
   @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY)
-  private List<CartItem> cartItems;
+  private Set<CartItem> cartItems;
 }

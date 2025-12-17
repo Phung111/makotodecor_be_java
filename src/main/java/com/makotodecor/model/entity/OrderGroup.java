@@ -34,12 +34,8 @@ public class OrderGroup {
   @Column(name = "product_name", nullable = false)
   private String productName;
 
-  /**
-   * JSONB column storing product images snapshot as an array of image objects.
-   * Stored as raw JSON string to avoid heavy type mapping.
-   */
-  @Column(name = "product_images", columnDefinition = "jsonb")
-  private String productImages;
+  @OneToMany(mappedBy = "orderGroup", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<Img> productImages;
 
   @OneToMany(mappedBy = "orderGroup", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   private List<OrderItem> orderItems;
@@ -47,4 +43,6 @@ public class OrderGroup {
   @Column(name = "created_at", nullable = false)
   private ZonedDateTime createdAt;
 }
+
+
 

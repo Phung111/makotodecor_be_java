@@ -49,6 +49,14 @@ public class Img {
   @JoinColumn(name = "img_type_id")
   private ImgType imgType;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "order_group_id")
+  private OrderGroup orderGroup;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "order_item_id")
+  private OrderItem orderItem;
+
   @Column(name = "created_at", nullable = false)
   @CreatedDate
   private ZonedDateTime createdAt;

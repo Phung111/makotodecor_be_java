@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.List;
+
 @Entity
 @Table(name = "orderItems")
 @NoArgsConstructor
@@ -51,9 +53,8 @@ public class OrderItem {
   private Long sizePrice;
 
   /**
-   * JSONB column storing variant images snapshot as an array of image objects.
-   * Stored as raw JSON string to keep mapping simple.
+   * Variant images snapshot stored as Img entities with type ORDER_ITEM.
    */
-  @Column(name = "variant_images", columnDefinition = "jsonb")
-  private String variantImages;
+  @OneToMany(mappedBy = "orderItem", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+  private List<Img> variantImages;
 }

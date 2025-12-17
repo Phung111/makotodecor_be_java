@@ -101,9 +101,15 @@ CREATE TABLE imgs (
     is_default BOOLEAN DEFAULT FALSE,
     product_id BIGINT,
     img_type_id BIGINT,
+    order_group_id BIGINT,
+    order_item_id BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ
 );
+
+-- Add comments for imgs order relations
+COMMENT ON COLUMN imgs.order_group_id IS 'Reference to order_group for product images snapshot';
+COMMENT ON COLUMN imgs.order_item_id IS 'Reference to order_item for variant images snapshot';
 
 -- Create carts table
 CREATE TABLE carts (
@@ -154,8 +160,7 @@ CREATE TABLE order_items (
     color_name VARCHAR(100),
     size_name VARCHAR(50),
     size_price BIGINT,
-    order_group_id BIGINT,
-    variant_images JSONB
+    order_group_id BIGINT
 );
 
 -- Add comments for order_items snapshot fields
@@ -169,7 +174,6 @@ CREATE TABLE order_groups (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     product_name VARCHAR(255) NOT NULL,
-    product_images JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -211,6 +215,16 @@ FOREIGN KEY (product_id) REFERENCES products(id);
 ALTER TABLE imgs 
 ADD CONSTRAINT fk_imgs_img_type 
 FOREIGN KEY (img_type_id) REFERENCES img_types(id);
+
+-- Imgs to OrderGroups
+ALTER TABLE imgs
+ADD CONSTRAINT fk_imgs_order_group
+FOREIGN KEY (order_group_id) REFERENCES order_groups(id) ON DELETE CASCADE;
+
+-- Imgs to OrderItems
+ALTER TABLE imgs
+ADD CONSTRAINT fk_imgs_order_item
+FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE;
 
 -- Carts to Users
 ALTER TABLE carts 

@@ -9,6 +9,7 @@ import com.makotodecor.service.OrderService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -20,7 +21,7 @@ public class OrderController implements OrderServiceApi {
   private final OrderService orderService;
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<OrdersPagedResponse> _getOrdersPaged(Integer page, Integer size, String orderBy,
       String status, Long userId) {
     var criteria = OrderPagedCriteria.builder()
