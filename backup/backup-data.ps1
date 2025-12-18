@@ -99,7 +99,7 @@ foreach ($table in $tableOrder) {
         -e PGPASSWORD=$DB_PASSWORD `
         -v "${currentDir}:/backup" `
         postgres:17 `
-        sh -c "pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
+        sh -c "pg_dump \"host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require\" --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
     
     # Check if table doesn't exist (skip instead of fail)
     $tableNotFound = $false

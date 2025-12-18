@@ -56,6 +56,12 @@ public class Order {
   @Column(name = "total_price")
   private Long totalPrice;
 
+  @Column(name = "product_count")
+  private Long productCount;
+
+  @Column(name = "total_quantity")
+  private Long totalQuantity;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;

@@ -92,6 +92,10 @@ SET row_security = off;
 # Storage for circular reference handling
 # imgs.product_id -> products.id (circular with categories)
 $imgsProductIdMapping = @{}
+# imgs.order_group_id -> order_groups.id (FK dependency)
+$imgsOrderGroupIdMapping = @{}
+# imgs.order_item_id -> order_items.id (FK dependency)
+$imgsOrderItemIdMapping = @{}
 
 # Dump each table in order and append to file
 $tablesBackedUp = 0
@@ -106,7 +110,7 @@ foreach ($table in $tableOrder) {
         -e PGPASSWORD=$DB_PASSWORD `
         -v "${currentDir}:/backup" `
         postgres:17 `
-        sh -c "pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
+        sh -c "pg_dump \"host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require\" --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
     
     # Check if table doesn't exist (skip instead of fail)
     $tableNotFound = $false
@@ -129,6 +133,8 @@ foreach ($table in $tableOrder) {
         $copyBlock = @()
         $sequenceBlock = @()
         $productIdColumnIndex = -1
+        $orderGroupIdColumnIndex = -1
+        $orderItemIdColumnIndex = -1
         
         foreach ($line in $tableLines) {
             # Skip header lines (SET statements, etc.)
@@ -143,14 +149,20 @@ foreach ($table in $tableOrder) {
                 $inCopyBlock = $true
                 $copyBlock = @($line)
                 
-                # For imgs table: find product_id column index to handle circular reference
+                # For imgs table: find column indices to handle FK dependencies
                 if ($table -eq "imgs" -and $line -match "COPY public\.imgs \(([^)]+)\)") {
                     $columns = $matches[1] -split ",\s*"
                     for ($i = 0; $i -lt $columns.Count; $i++) {
-                        if ($columns[$i].Trim() -eq "product_id") {
+                        $colName = $columns[$i].Trim()
+                        if ($colName -eq "product_id") {
                             $productIdColumnIndex = $i
-                            Write-Host "    Handling circular reference: imgs.product_id (column index $i)" -ForegroundColor Cyan
-                            break
+                            Write-Host "    Handling FK dependency: imgs.product_id (column index $i)" -ForegroundColor Cyan
+                        } elseif ($colName -eq "order_group_id") {
+                            $orderGroupIdColumnIndex = $i
+                            Write-Host "    Handling FK dependency: imgs.order_group_id (column index $i)" -ForegroundColor Cyan
+                        } elseif ($colName -eq "order_item_id") {
+                            $orderItemIdColumnIndex = $i
+                            Write-Host "    Handling FK dependency: imgs.order_item_id (column index $i)" -ForegroundColor Cyan
                         }
                     }
                 }
@@ -166,20 +178,44 @@ foreach ($table in $tableOrder) {
             
             # Collect COPY data lines
             if ($inCopyBlock) {
-                # Special handling for imgs table: set product_id to NULL and save for later UPDATE
-                if ($table -eq "imgs" -and $productIdColumnIndex -ge 0) {
+                # Special handling for imgs table: set FK columns to NULL and save for later UPDATE
+                if ($table -eq "imgs") {
                     $fields = $line -split "`t"
-                    if ($fields.Count -gt $productIdColumnIndex) {
-                        $imgId = $fields[0]
+                    $imgId = $fields[0]
+                    $modified = $false
+                    
+                    # Handle product_id
+                    if ($productIdColumnIndex -ge 0 -and $fields.Count -gt $productIdColumnIndex) {
                         $productId = $fields[$productIdColumnIndex]
-                        
-                        # If product_id is not NULL, save it for UPDATE later
                         if ($productId -ne "\N" -and $productId -ne "") {
                             $imgsProductIdMapping[$imgId] = $productId
-                            # Set product_id to NULL in COPY data
                             $fields[$productIdColumnIndex] = "\N"
-                            $line = $fields -join "`t"
+                            $modified = $true
                         }
+                    }
+                    
+                    # Handle order_group_id
+                    if ($orderGroupIdColumnIndex -ge 0 -and $fields.Count -gt $orderGroupIdColumnIndex) {
+                        $orderGroupId = $fields[$orderGroupIdColumnIndex]
+                        if ($orderGroupId -ne "\N" -and $orderGroupId -ne "") {
+                            $imgsOrderGroupIdMapping[$imgId] = $orderGroupId
+                            $fields[$orderGroupIdColumnIndex] = "\N"
+                            $modified = $true
+                        }
+                    }
+                    
+                    # Handle order_item_id
+                    if ($orderItemIdColumnIndex -ge 0 -and $fields.Count -gt $orderItemIdColumnIndex) {
+                        $orderItemId = $fields[$orderItemIdColumnIndex]
+                        if ($orderItemId -ne "\N" -and $orderItemId -ne "") {
+                            $imgsOrderItemIdMapping[$imgId] = $orderItemId
+                            $fields[$orderItemIdColumnIndex] = "\N"
+                            $modified = $true
+                        }
+                    }
+                    
+                    if ($modified) {
+                        $line = $fields -join "`t"
                     }
                 }
                 $copyBlock += $line
@@ -198,19 +234,27 @@ foreach ($table in $tableOrder) {
             $copyBlock | Add-Content -Path $BACKUP_FILE -Encoding UTF8
             $tablesBackedUp++
             
-            # Show circular reference handling info
-            if ($table -eq "imgs" -and $imgsProductIdMapping.Count -gt 0) {
-                Write-Host "    Saved $($imgsProductIdMapping.Count) imgs.product_id values for UPDATE after products" -ForegroundColor Cyan
+            # Show FK dependency handling info
+            if ($table -eq "imgs") {
+                if ($imgsProductIdMapping.Count -gt 0) {
+                    Write-Host "    Saved $($imgsProductIdMapping.Count) imgs.product_id values for UPDATE after products" -ForegroundColor Cyan
+                }
+                if ($imgsOrderGroupIdMapping.Count -gt 0) {
+                    Write-Host "    Saved $($imgsOrderGroupIdMapping.Count) imgs.order_group_id values for UPDATE after order_groups" -ForegroundColor Cyan
+                }
+                if ($imgsOrderItemIdMapping.Count -gt 0) {
+                    Write-Host "    Saved $($imgsOrderItemIdMapping.Count) imgs.order_item_id values for UPDATE after order_items" -ForegroundColor Cyan
+                }
             }
         }
         
         # After products table: add UPDATE statements to restore imgs.product_id
         if ($table -eq "products" -and $imgsProductIdMapping.Count -gt 0) {
-            Write-Host "  Adding UPDATE statements for imgs.product_id (circular reference fix)..." -ForegroundColor Cyan
+            Write-Host "  Adding UPDATE statements for imgs.product_id (FK dependency fix)..." -ForegroundColor Cyan
             
             $updateStatements = @()
             $updateStatements += ""
-            $updateStatements += "-- Fix circular reference: Update imgs.product_id after products are inserted"
+            $updateStatements += "-- Fix FK dependency: Update imgs.product_id after products are inserted"
             
             # Group by product_id to create fewer UPDATE statements
             $productIdToImgIds = @{}
@@ -233,6 +277,68 @@ foreach ($table in $tableOrder) {
             
             Add-Content -Path $BACKUP_FILE -Value ($updateStatements -join "`n") -Encoding UTF8
             Write-Host "    Added $($productIdToImgIds.Count) UPDATE statements" -ForegroundColor Green
+        }
+        
+        # After order_groups table: add UPDATE statements to restore imgs.order_group_id
+        if ($table -eq "order_groups" -and $imgsOrderGroupIdMapping.Count -gt 0) {
+            Write-Host "  Adding UPDATE statements for imgs.order_group_id (FK dependency fix)..." -ForegroundColor Cyan
+            
+            $updateStatements = @()
+            $updateStatements += ""
+            $updateStatements += "-- Fix FK dependency: Update imgs.order_group_id after order_groups are inserted"
+            
+            # Group by order_group_id to create fewer UPDATE statements
+            $orderGroupIdToImgIds = @{}
+            foreach ($entry in $imgsOrderGroupIdMapping.GetEnumerator()) {
+                $imgId = $entry.Key
+                $orderGroupId = $entry.Value
+                if (-not $orderGroupIdToImgIds.ContainsKey($orderGroupId)) {
+                    $orderGroupIdToImgIds[$orderGroupId] = @()
+                }
+                $orderGroupIdToImgIds[$orderGroupId] += $imgId
+            }
+            
+            foreach ($entry in $orderGroupIdToImgIds.GetEnumerator()) {
+                $orderGroupId = $entry.Key
+                $imgIds = $entry.Value -join ", "
+                $updateStatements += "UPDATE public.imgs SET order_group_id = $orderGroupId WHERE id IN ($imgIds);"
+            }
+            
+            $updateStatements += ""
+            
+            Add-Content -Path $BACKUP_FILE -Value ($updateStatements -join "`n") -Encoding UTF8
+            Write-Host "    Added $($orderGroupIdToImgIds.Count) UPDATE statements" -ForegroundColor Green
+        }
+        
+        # After order_items table: add UPDATE statements to restore imgs.order_item_id
+        if ($table -eq "order_items" -and $imgsOrderItemIdMapping.Count -gt 0) {
+            Write-Host "  Adding UPDATE statements for imgs.order_item_id (FK dependency fix)..." -ForegroundColor Cyan
+            
+            $updateStatements = @()
+            $updateStatements += ""
+            $updateStatements += "-- Fix FK dependency: Update imgs.order_item_id after order_items are inserted"
+            
+            # Group by order_item_id to create fewer UPDATE statements
+            $orderItemIdToImgIds = @{}
+            foreach ($entry in $imgsOrderItemIdMapping.GetEnumerator()) {
+                $imgId = $entry.Key
+                $orderItemId = $entry.Value
+                if (-not $orderItemIdToImgIds.ContainsKey($orderItemId)) {
+                    $orderItemIdToImgIds[$orderItemId] = @()
+                }
+                $orderItemIdToImgIds[$orderItemId] += $imgId
+            }
+            
+            foreach ($entry in $orderItemIdToImgIds.GetEnumerator()) {
+                $orderItemId = $entry.Key
+                $imgIds = $entry.Value -join ", "
+                $updateStatements += "UPDATE public.imgs SET order_item_id = $orderItemId WHERE id IN ($imgIds);"
+            }
+            
+            $updateStatements += ""
+            
+            Add-Content -Path $BACKUP_FILE -Value ($updateStatements -join "`n") -Encoding UTF8
+            Write-Host "    Added $($orderItemIdToImgIds.Count) UPDATE statements" -ForegroundColor Green
         }
         
         # Append sequence set if exists

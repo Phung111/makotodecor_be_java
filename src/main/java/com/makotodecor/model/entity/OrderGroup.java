@@ -34,6 +34,9 @@ public class OrderGroup {
   @Column(name = "product_name", nullable = false)
   private String productName;
 
+  @Column(name = "total_quantity")
+  private Long totalQuantity;
+
   @OneToMany(mappedBy = "orderGroup", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   private List<Img> orderGroupImages;
 
@@ -43,6 +46,8 @@ public class OrderGroup {
   @Column(name = "created_at", nullable = false)
   private ZonedDateTime createdAt;
 }
+
+
 
 
 

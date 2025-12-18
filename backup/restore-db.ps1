@@ -237,6 +237,11 @@ RESET search_path;
     # Wrap everything in a transaction so if COPY fails, TRUNCATE is rolled back
     $beginSQL = @"
 -- Start transaction for atomic restore (rollback if any error)
+-- Set timeouts to prevent connection loss (Neon connection pooler)
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 BEGIN;
 SET CONSTRAINTS ALL DEFERRED;
 
@@ -258,11 +263,16 @@ $tempRestoreName = Split-Path $tempRestoreFile -Leaf
 
 # Run restore and capture output
 Write-Host "Executing restore..." -ForegroundColor Yellow
+# Add connection options to handle Neon connection pooler and timeouts
+# connect_timeout: 30 seconds
+# keepalives_idle: 10 seconds (send keepalive every 10s)
+# keepalives_interval: 5 seconds (retry interval)
+# keepalives_count: 3 (max retries)
 $restoreOutput = docker run --rm `
     -e PGPASSWORD=$DB_PASSWORD `
     -v "${backupDir}:/backup" `
     postgres:17 `
-    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /backup/$tempRestoreName 2>&1
+    psql "host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require connect_timeout=30 keepalives_idle=10 keepalives_interval=5 keepalives_count=3" -f /backup/$tempRestoreName 2>&1
 
 # Display output
 $restoreOutput | ForEach-Object { Write-Host $_ }

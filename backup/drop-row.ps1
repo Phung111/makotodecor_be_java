@@ -67,7 +67,7 @@ $output = docker run --rm `
     -e PGPASSWORD=$DB_PASSWORD `
     -v "${currentDir}:/backup" `
     postgres:$POSTGRES_VERSION `
-    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /backup/$tempSqlFile 2>&1
+    psql "host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require" -f /backup/$tempSqlFile 2>&1
 
 # Display output
 $output | ForEach-Object { Write-Host $_ }

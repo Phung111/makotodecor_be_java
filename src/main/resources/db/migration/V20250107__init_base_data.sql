@@ -144,6 +144,8 @@ CREATE TABLE orders (
     payment_proof_url VARCHAR(500),
     payment_proof_public_id VARCHAR(255),
     total_price BIGINT,
+    product_count BIGINT,
+    total_quantity BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT
@@ -174,6 +176,7 @@ CREATE TABLE order_groups (
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     product_name VARCHAR(255) NOT NULL,
+    total_quantity BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -38,7 +38,7 @@ docker run --rm `
     -e PGPASSWORD=$DB_PASSWORD `
     -v "${currentDir}:/backup" `
     postgres:17 `
-    sh -c "pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME --encoding=UTF8 > /backup/$BACKUP_FILE"
+    sh -c "pg_dump \"host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require\" --encoding=UTF8 > /backup/$BACKUP_FILE"
 
 if ($LASTEXITCODE -eq 0) {
     $fileSize = (Get-Item $BACKUP_FILE).Length / 1MB

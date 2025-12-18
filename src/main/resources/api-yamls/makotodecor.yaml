@@ -3169,10 +3169,14 @@ components:
           type: integer
           format: int64
           description: Total amount
-        itemCount:
+        productCount:
           type: integer
           format: int64
-          description: Number of items in order
+          description: Number of distinct products in order
+        totalQuantity:
+          type: integer
+          format: int64
+          description: Total quantity of all items in order
         createdAt:
           type: string
           format: date-time
@@ -3247,6 +3251,10 @@ components:
           items:
             $ref: '#/components/schemas/OrderItemDetailResponse'
           description: List of variants for this product
+        totalQuantity:
+          type: integer
+          format: int64
+          description: Total quantity of all items in this order group
 
     OrderItemDetailResponse:
       type: object

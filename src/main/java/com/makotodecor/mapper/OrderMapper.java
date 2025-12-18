@@ -25,7 +25,8 @@ public interface OrderMapper {
   @Mapping(target = "username", source = "user.username")
   @Mapping(target = "userEmail", source = "user.email")
   @Mapping(target = "total", source = "totalPrice")
-  @Mapping(target = "itemCount", expression = "java(getItemCount(order))")
+  @Mapping(target = "productCount", source = "productCount")
+  @Mapping(target = "totalQuantity", source = "totalQuantity")
   OrderItemResponse toOrderItemResponse(Order order);
 
   // Map Order to OrderDetailResponse (for detail view)
@@ -45,6 +46,7 @@ public interface OrderMapper {
   @Mapping(target = "productImage", expression = "java(mapProductDefaultImage(orderGroup.getProduct()))")
   @Mapping(target = "orderGroupImages", expression = "java(mapOrderGroupImages(orderGroup.getOrderGroupImages()))")
   @Mapping(target = "orderItems", expression = "java(mapOrderItems(orderGroup.getOrderItems()))")
+  @Mapping(target = "totalQuantity", source = "orderGroup.totalQuantity")
   OrderGroupResponse toOrderGroupResponse(OrderGroup orderGroup);
 
   // Map OrderItem to OrderItemDetailResponse
@@ -178,16 +180,12 @@ public interface OrderMapper {
     return finalPrice * quantity;
   }
 
-  // Get total item count from order
-  default Long getItemCount(Order order) {
+  // Get product count from order (count distinct products, not order items)
+  default Long getProductCount(Order order) {
     if (order == null || order.getOrderGroups() == null) {
       return 0L;
     }
-    return order.getOrderGroups().stream()
-        .filter(group -> group.getOrderItems() != null)
-        .flatMap(group -> group.getOrderItems().stream())
-        .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0L)
-        .sum();
+    return (long) order.getOrderGroups().size();
   }
 
   // Map status enum to DTO enum

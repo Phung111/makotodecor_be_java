@@ -211,13 +211,15 @@ public class OrderServiceImpl implements OrderService {
       }
 
       // Process order items for this group
+      Long groupTotalQuantity = 0L;
       if (reqGroup.getOrderItems() != null) {
         for (com.makotodecor.model.CreateOrderItem reqItem : reqGroup.getOrderItems()) {
+          Long itemQuantity = reqItem.getQuantity() != null ? reqItem.getQuantity() : 1L;
           OrderItem orderItem = OrderItem.builder()
               .order(order)
               .orderGroup(group)
               .product(product)
-              .quantity(reqItem.getQuantity() != null ? reqItem.getQuantity() : 1L)
+              .quantity(itemQuantity)
               .price(reqItem.getPrice())
               .discount(reqItem.getDiscount() != null ? reqItem.getDiscount() : 0L)
               .colorName(reqItem.getColorName())
@@ -225,6 +227,7 @@ public class OrderServiceImpl implements OrderService {
               .sizePrice(reqItem.getPrice())
               .build();
           orderItems.add(orderItem);
+          groupTotalQuantity += itemQuantity;
 
           // Save order item first to get ID
           orderItemRepository.save(orderItem);
@@ -247,6 +250,9 @@ public class OrderServiceImpl implements OrderService {
           }
         }
       }
+      // Set totalQuantity for this order group
+      group.setTotalQuantity(groupTotalQuantity);
+      orderGroupRepository.save(group);
     }
 
     // Save all images
@@ -259,6 +265,16 @@ public class OrderServiceImpl implements OrderService {
         .map(item -> orderMapper.calculateSubtotal(item))
         .reduce(0L, Long::sum);
     order.setTotalPrice(total);
+
+    // Calculate productCount (number of distinct products/order groups)
+    order.setProductCount((long) orderGroups.size());
+
+    // Calculate totalQuantity (sum of all quantities of all order items)
+    Long totalQuantity = orderItems.stream()
+        .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0L)
+        .sum();
+    order.setTotalQuantity(totalQuantity);
+
     orderRepository.save(order);
 
     return orderMapper.toOrderDetailResponse(order);
