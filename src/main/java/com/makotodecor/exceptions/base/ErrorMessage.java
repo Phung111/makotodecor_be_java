@@ -49,6 +49,8 @@ public enum ErrorMessage {
 
   // Order errors
   ORDER_NOT_FOUND("O001", "order.not.found"),
+  ORDER_STATUS_INVALID("O002", "order.status.invalid"),
+  PAYMENT_PROOF_REQUIRED("O003", "order.payment.proof.required"),
 
   // General errors
   ITEM_NOT_FOUND("G001", "item.not.found"),

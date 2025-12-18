@@ -76,6 +76,7 @@ public interface OrderMapper {
     shippingInfo.setPhone(order.getShippingPhone());
     shippingInfo.setAddress(order.getShippingAddress());
     shippingInfo.setNote(order.getShippingNote());
+    shippingInfo.setFacebookLink(order.getShippingFacebookLink());
     return shippingInfo;
   }
 

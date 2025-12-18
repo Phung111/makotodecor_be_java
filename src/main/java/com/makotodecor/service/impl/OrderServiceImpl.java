@@ -158,13 +158,15 @@ public class OrderServiceImpl implements OrderService {
     // Create base order
     final Order order = Order.builder()
         .code(generateOrderCode())
-        .status(OrderStatusEnum.NEW)
+        .status(OrderStatusEnum.NEW) // Will be updated based on paymentProof
         .user(user)
         .shippingFullName(request.getShippingInfo() != null ? request.getShippingInfo().getFullName() : null)
         .shippingPhone(request.getShippingInfo() != null ? request.getShippingInfo().getPhone() : null)
         .shippingAddress(request.getShippingInfo() != null ? request.getShippingInfo().getAddress() : null)
         .shippingNote(request.getShippingInfo() != null ? request.getShippingInfo().getNote() : null)
+        .shippingFacebookLink(request.getShippingInfo() != null ? request.getShippingInfo().getFacebookLink() : null)
         .paymentProofUrl(request.getPaymentProof() != null ? request.getPaymentProof().getUrl() : null)
+        .paymentProofPublicId(request.getPaymentProof() != null ? request.getPaymentProof().getPublicId() : null)
         .createdAt(ZonedDateTime.now())
         .build();
 
@@ -275,6 +277,23 @@ public class OrderServiceImpl implements OrderService {
         .sum();
     order.setTotalQuantity(totalQuantity);
 
+    // Calculate deposit amount (30% of total)
+    Long depositAmount = Math.round(total * 0.3);
+    order.setDepositAmount(depositAmount);
+
+    // Calculate remaining amount
+    Long remainingAmount = total - depositAmount;
+    order.setRemainingAmount(remainingAmount);
+
+    // Set order status based on paymentProof
+    // If paymentProof.url exists, status is DEPOSITED (Đã cọc)
+    // Otherwise, status is PENDING_DEPOSIT (Chưa cọc)
+    if (request.getPaymentProof() != null && request.getPaymentProof().getUrl() != null && !request.getPaymentProof().getUrl().isEmpty()) {
+      order.setStatus(OrderStatusEnum.DEPOSITED);
+    } else {
+      order.setStatus(OrderStatusEnum.PENDING_DEPOSIT);
+    }
+
     orderRepository.save(order);
 
     return orderMapper.toOrderDetailResponse(order);
@@ -337,6 +356,63 @@ public class OrderServiceImpl implements OrderService {
     if (!order.getUser().getId().equals(user.getId())) {
       throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
     }
+
+    // Eager load orderGroups, orderItems, product and product images
+    if (order.getOrderGroups() != null) {
+      order.getOrderGroups().forEach(group -> {
+        // Load orderGroupImages
+        if (group.getOrderGroupImages() != null) {
+          group.getOrderGroupImages().size();
+        }
+        // Load product and its default image
+        if (group.getProduct() != null) {
+          group.getProduct().getName();
+          if (group.getProduct().getImgs() != null) {
+            group.getProduct().getImgs().size();
+          }
+        }
+        // Load orderItems and their variantImages
+        if (group.getOrderItems() != null) {
+          group.getOrderItems().forEach(item -> {
+            if (item.getVariantImages() != null) {
+              item.getVariantImages().size();
+            }
+          });
+        }
+      });
+    }
+
+    return orderMapper.toOrderDetailResponse(order);
+  }
+
+  @Override
+  @Transactional
+  public OrderDetailResponse updatePaymentProof(Long orderId, com.makotodecor.model.ImageInfo paymentProof, String username) {
+    User user = findUserByUsername(username);
+    Order order = findOrderById(orderId);
+
+    // Verify the order belongs to the user
+    if (!order.getUser().getId().equals(user.getId())) {
+      throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
+    }
+
+    // Check if order status is PENDING_DEPOSIT
+    if (order.getStatus() != OrderStatusEnum.PENDING_DEPOSIT) {
+      throw new WebBadRequestException(ErrorMessage.ORDER_STATUS_INVALID);
+    }
+
+    // Update payment proof
+    if (paymentProof != null) {
+      order.setPaymentProofUrl(paymentProof.getUrl());
+      order.setPaymentProofPublicId(paymentProof.getPublicId());
+    } else {
+      throw new WebBadRequestException(ErrorMessage.PAYMENT_PROOF_REQUIRED);
+    }
+
+    // Change status to DEPOSITED
+    order.setStatus(OrderStatusEnum.DEPOSITED);
+
+    orderRepository.save(order);
 
     // Eager load orderGroups, orderItems, product and product images
     if (order.getOrderGroups() != null) {

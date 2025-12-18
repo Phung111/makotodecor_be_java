@@ -62,6 +62,15 @@ public class Order {
   @Column(name = "total_quantity")
   private Long totalQuantity;
 
+  @Column(name = "deposit_amount")
+  private Long depositAmount;
+
+  @Column(name = "remaining_amount")
+  private Long remainingAmount;
+
+  @Column(name = "shipping_facebook_link")
+  private String shippingFacebookLink;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;

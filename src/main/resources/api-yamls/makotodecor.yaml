@@ -1265,8 +1265,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Order does not belong to user
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api/orders/{orderId}/payment-proof:
+    put:
+      tags:
+        - orderService
+      operationId: updatePaymentProof
+      summary: Update payment proof for an order
+      description: Update payment proof image for an order with PENDING_DEPOSIT status. This will change the order status to DEPOSITED.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          description: ID of order
+          example: 1
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentProofRequest'
+      responses:
+        '200':
+          description: Payment proof updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+        '400':
+          description: Bad Request (Order is not in PENDING_DEPOSIT status or invalid request)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1279,6 +1329,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Order does not belong to user
           content:
             application/json:
               schema:
@@ -2386,6 +2442,9 @@ components:
           type: string
         note:
           type: string
+        facebookLink:
+          type: string
+          description: Facebook link for easy contact
 
     CreateOrderGroup:
       type: object
@@ -2817,8 +2876,6 @@ components:
 
     ImgItemResponse:
       type: object
-      required:
-        - product
       properties:
         id:
           type: integer
@@ -3311,6 +3368,13 @@ components:
             $ref: '#/components/schemas/ImageInfo'
           description: Images for this variant
 
+    UpdatePaymentProofRequest:
+      type: object
+      properties:
+        paymentProof:
+          $ref: '#/components/schemas/ImageInfo'
+          description: Payment proof image information
+
     UpdateOrderStatusRequest:
       type: object
       properties:
@@ -3325,8 +3389,10 @@ components:
       type: string
       enum:
         - NEW
+        - PENDING_DEPOSIT
         - DEPOSITED
         - PROCESSING
+        - PAID
         - CANCELLED
         - COMPLETED
 

@@ -5,7 +5,15 @@
 
 -- Create ENUM types
 CREATE TYPE role AS ENUM ('USER', 'STAFF', 'ADMIN');
-CREATE TYPE order_status AS ENUM ('NEW', 'DEPOSITED', 'CANCELLED', 'COMPLETED');
+CREATE TYPE order_status AS ENUM (
+  'NEW',
+  'PENDING_DEPOSIT',
+  'DEPOSITED',
+  'PAID',
+  'PROCESSING',
+  'CANCELLED',
+  'COMPLETED'
+);
 CREATE TYPE product_status AS ENUM ('ACTIVE', 'INACTIVE', 'OUT_OF_STOCK', 'DISCONTINUED');
 CREATE TYPE category_status AS ENUM ('ACTIVE', 'INACTIVE');
 CREATE TYPE img_type_status AS ENUM ('ACTIVE', 'INACTIVE');
@@ -141,11 +149,14 @@ CREATE TABLE orders (
     shipping_phone VARCHAR(50),
     shipping_address TEXT,
     shipping_note TEXT,
+    shipping_facebook_link VARCHAR(500),
     payment_proof_url VARCHAR(500),
     payment_proof_public_id VARCHAR(255),
     total_price BIGINT,
     product_count BIGINT,
     total_quantity BIGINT,
+    deposit_amount BIGINT,
+    remaining_amount BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ,
     updated_by BIGINT
@@ -299,4 +310,3 @@ CREATE INDEX idx_imgs_img_type_id ON imgs(img_type_id);
 CREATE INDEX idx_imgs_product_id ON imgs(product_id);
 
 CREATE INDEX idx_imgs_img_type_product ON imgs(img_type_id, product_id);
-

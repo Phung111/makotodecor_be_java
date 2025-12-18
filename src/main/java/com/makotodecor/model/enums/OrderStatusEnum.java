@@ -6,7 +6,9 @@ import lombok.Getter;
 public enum OrderStatusEnum implements PersistableEnum<String> {
 
   NEW("NEW"),
+  PENDING_DEPOSIT("PENDING_DEPOSIT"),
   DEPOSITED("DEPOSITED"),
+  PAID("PAID"),
   PROCESSING("PROCESSING"),
   CANCELLED("CANCELLED"),
   COMPLETED("COMPLETED");

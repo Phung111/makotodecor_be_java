@@ -4,6 +4,7 @@ import com.makotodecor.model.CreateOrderRequest;
 import com.makotodecor.model.OrderDetailResponse;
 import com.makotodecor.model.OrdersPagedResponse;
 import com.makotodecor.model.UpdateOrderStatusRequest;
+import com.makotodecor.model.UpdatePaymentProofRequest;
 import com.makotodecor.model.dto.OrderPagedCriteria;
 import com.makotodecor.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -73,6 +74,15 @@ public class OrderController implements OrderServiceApi {
   public ResponseEntity<OrderDetailResponse> _getMyOrder(Long orderId) {
     String username = getCurrentUsername();
     return ResponseEntity.ok(orderService.getMyOrder(orderId, username));
+  }
+
+  // Update payment proof for order with PENDING_DEPOSIT status
+  // This endpoint is accessible to authenticated users for their own orders
+  @Override
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<OrderDetailResponse> _updatePaymentProof(Long orderId, UpdatePaymentProofRequest request) {
+    String username = getCurrentUsername();
+    return ResponseEntity.ok(orderService.updatePaymentProof(orderId, request.getPaymentProof(), username));
   }
 
   private String getCurrentUsername() {
