@@ -78,14 +78,19 @@ public interface CartMapper {
               .mapToLong(ci -> ci.getQuantity() != null ? ci.getQuantity() : 0L)
               .sum();
 
+          // Get price from size and discount from product
+          Long price = size != null && size.getPrice() != null ? size.getPrice() : 0L;
+          Long discount = first.getProduct() != null && first.getProduct().getDiscount() != null 
+              ? first.getProduct().getDiscount() : 0L;
+
           CartVariantResponse.CartVariantResponseBuilder builder = CartVariantResponse.builder()
               .id(first.getId())
               .priceId(size != null ? size.getId() : null)
               .sizeId(size != null ? size.getId() : null)
               .size(size != null ? size.getSize() : null)
-              .price(first.getPrice())
-              .discount(first.getDiscount())
-              .finalPrice(calculateFinalPrice(first.getPrice(), first.getDiscount()))
+              .price(price)
+              .discount(discount)
+              .finalPrice(calculateFinalPrice(price, discount))
               .quantity(totalQuantity)
               .sizeIsActive(size != null && size.getIsActive() != null ? size.getIsActive() : true);
 

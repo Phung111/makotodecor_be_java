@@ -29,12 +29,6 @@ public class CartItem {
   @Column(nullable = false)
   private Long quantity;
 
-  @Column(nullable = false)
-  private Long price;
-
-  @Column(nullable = false)
-  private Long discount;
-
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id", nullable = false)
   private Product product;

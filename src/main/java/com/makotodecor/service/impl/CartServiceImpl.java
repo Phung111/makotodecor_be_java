@@ -124,17 +124,12 @@ public class CartServiceImpl implements CartService {
       cartItem.setUpdatedAt(ZonedDateTime.now());
       cartItemRepository.save(cartItem);
     } else {
-      Long price = size.getPrice();
-      Long discount = product.getDiscount() != null ? product.getDiscount() : 0L;
-
       CartItem cartItem = CartItem.builder()
           .cart(cart)
           .product(product)
           .size(size)
           .color(color)
           .quantity(request.getQuantity())
-          .price(price)
-          .discount(discount)
           .createdAt(ZonedDateTime.now())
           .updatedAt(ZonedDateTime.now())
           .build();

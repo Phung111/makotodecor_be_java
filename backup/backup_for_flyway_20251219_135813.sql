@@ -1,0 +1,5 @@
+﻿
+--
+-- PostgreSQL database dump complete (for Flyway flow)
+-- flyway_schema_history NOT included
+--
