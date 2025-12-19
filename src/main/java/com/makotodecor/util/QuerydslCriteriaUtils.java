@@ -83,13 +83,18 @@ public class QuerydslCriteriaUtils {
   public static Optional<Predicate> buildOrderSearchPredicate(OrderPagedCriteria criteria) {
     final QOrder qOrder = QOrder.order;
 
+    Optional<Predicate> keySearchOrPredicate = buildOrPredicate(Stream.of(
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.code, criteria.getKeySearch()), criteria.getKeySearch()),
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().username, criteria.getKeySearch()), criteria.getKeySearch()),
+        () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().email, criteria.getKeySearch()), criteria.getKeySearch())
+    ));
+
     final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
-      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.code, criteria.getKeySearch()), criteria.getKeySearch()),
-      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().username, criteria.getKeySearch()), criteria.getKeySearch()),
-      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().email, criteria.getKeySearch()), criteria.getKeySearch()),
+        () -> keySearchOrPredicate,
         () -> eqIfNotNull(
             () -> qOrder.status.eq(com.makotodecor.model.enums.OrderStatusEnum.valueOf(criteria.getStatus())),
-            criteria.getStatus()));
+            criteria.getStatus()),
+        () -> eqIfNotNull(() -> qOrder.user().id.eq(criteria.getUserId()), criteria.getUserId()));
     return buildPredicate(expressions);
     
   }
@@ -127,5 +132,19 @@ public class QuerydslCriteriaUtils {
         .toList();
 
     return Optional.ofNullable(ExpressionUtils.allOf(predicates));
+  }
+
+  private static Optional<Predicate> buildOrPredicate(Stream<Supplier<Optional<Predicate>>> expressions) {
+    final Collection<Predicate> predicates = expressions
+        .map(Supplier::get)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .toList();
+
+    if (predicates.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(ExpressionUtils.anyOf(predicates));
   }
 }
