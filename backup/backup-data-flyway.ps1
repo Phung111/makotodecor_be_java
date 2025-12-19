@@ -106,11 +106,16 @@ foreach ($table in $tableOrder) {
     $tempErrFile = "temp_${table}_err.txt"
     
     # Dump single table (capture stderr to check if table exists)
+    # Use environment variables to avoid quote escaping issues
     docker run --rm `
         -e PGPASSWORD=$DB_PASSWORD `
+        -e PGHOST=$DB_HOST `
+        -e PGUSER=$DB_USER `
+        -e PGDATABASE=$DB_NAME `
+        -e PGSSLMODE=require `
         -v "${currentDir}:/backup" `
         postgres:17 `
-        sh -c "pg_dump \"host=$DB_HOST user=$DB_USER dbname=$DB_NAME sslmode=require\" --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
+        sh -c "pg_dump --data-only --encoding=UTF8 -t public.$table > /backup/$tempDumpFile 2> /backup/$tempErrFile"
     
     # Check if table doesn't exist (skip instead of fail)
     $tableNotFound = $false
