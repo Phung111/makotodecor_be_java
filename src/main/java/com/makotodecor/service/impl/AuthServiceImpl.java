@@ -36,10 +36,8 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public Token register(RegisterRequest request) {
-    // Validate request
     AuthValidationUtils.validateRegisterRequest(request);
 
-    // Check if user already exists
     if (userRepository.findByUsername(request.getUsername()).isPresent()) {
       throw new AuthValidationException(ErrorMessage.AUTH_USERNAME_ALREADY_EXISTS);
     }
@@ -48,7 +46,6 @@ public class AuthServiceImpl implements AuthService {
       throw new AuthValidationException(ErrorMessage.AUTH_EMAIL_ALREADY_EXISTS);
     }
 
-    // Create new user
     User user = User.builder()
         .username(request.getUsername())
         .password(passwordEncoder.encode(request.getPassword()))
@@ -62,11 +59,9 @@ public class AuthServiceImpl implements AuthService {
 
     userRepository.save(user);
 
-    // Generate JWT tokens
     String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole().name());
     String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
     ZonedDateTime expiresAt = ZonedDateTime.now().plusHours(jwtUtil.getExpirationHours()); // Configurable expiration
-                                                                                           // hours
 
     return Token.builder()
         .token(accessToken)
@@ -77,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public Token login(LoginRequest request) {
-    // Validate request
     AuthValidationUtils.validateLoginRequest(request);
 
     try {
@@ -87,11 +81,9 @@ public class AuthServiceImpl implements AuthService {
       User user = userRepository.findByUsername(request.getUsername())
           .orElseThrow(() -> new AuthValidationException(ErrorMessage.AUTH_USER_NOT_FOUND));
 
-      // Generate JWT tokens
       String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole().name());
       String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
       ZonedDateTime expiresAt = ZonedDateTime.now().plusHours(jwtUtil.getExpirationHours()); // Configurable expiration
-                                                                                             // hours
 
       return Token.builder()
           .token(accessToken)
@@ -106,11 +98,9 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public Token refreshToken(RefreshTokenRequest request) {
-    // Validate request
     AuthValidationUtils.validateRefreshTokenRequest(request);
 
     try {
-      // Validate refresh token
       String username = jwtUtil.extractUsernameFromRefreshToken(request.getRefreshToken());
 
       if (!jwtUtil.validateRefreshToken(request.getRefreshToken(), username)) {
@@ -120,11 +110,9 @@ public class AuthServiceImpl implements AuthService {
       User user = userRepository.findByUsername(username)
           .orElseThrow(() -> new AuthValidationException(ErrorMessage.AUTH_USER_NOT_FOUND));
 
-      // Generate new JWT tokens
       String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId(), user.getRole().name());
       String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId());
       ZonedDateTime expiresAt = ZonedDateTime.now().plusHours(jwtUtil.getExpirationHours()); // Configurable expiration
-                                                                                             // hours
 
       return Token.builder()
           .token(accessToken)
@@ -139,30 +127,23 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public void changePassword(ChangePasswordRequest request, String username) {
-    // Validate request
     AuthValidationUtils.validateChangePasswordRequest(request);
 
-    // Find user by username
     User user = userRepository.findByUsername(username)
         .orElseThrow(() -> new AuthValidationException(ErrorMessage.AUTH_USER_NOT_FOUND));
 
-    // Verify current password
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
       throw new AuthValidationException(ErrorMessage.AUTH_CURRENT_PASSWORD_INCORRECT);
     }
 
-    // Validate new password confirmation (this is also checked in validation but
-    // double-check for security)
     if (!request.getNewPassword().equals(request.getConfirmPassword())) {
       throw new AuthValidationException(ErrorMessage.AUTH_PASSWORDS_NOT_MATCH);
     }
 
-    // Validate new password is different from current
     if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
       throw new AuthValidationException(ErrorMessage.AUTH_PASSWORD_SAME_AS_CURRENT);
     }
 
-    // Update password
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     userRepository.save(user);
   }

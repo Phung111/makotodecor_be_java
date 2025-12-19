@@ -229,7 +229,6 @@ public interface ProductMapper {
     if (minPrice == null || product.getDiscount() == null) {
       return null;
     }
-    // Calculate: minPrice * (100 - discount) / 100
     return minPrice * (100 - product.getDiscount()) / 100;
   }
 

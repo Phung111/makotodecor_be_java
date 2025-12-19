@@ -23,14 +23,14 @@ public class OrderController implements OrderServiceApi {
 
   @Override
   @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
-  public ResponseEntity<OrdersPagedResponse> _getOrdersPaged(Integer page, Integer size, String orderBy,
-      String status, Long userId) {
+  public ResponseEntity<OrdersPagedResponse> _getOrdersPaged(Integer page, Integer size, String orderBy, String keySearch,
+      String status) {
     var criteria = OrderPagedCriteria.builder()
         .page(page)
         .size(size)
         .orderBy(orderBy)
+        .keySearch(keySearch)
         .status(status)
-        .userId(userId)
         .build();
     return ResponseEntity.ok(orderService.getOrdersPaged(criteria));
   }
@@ -57,13 +57,13 @@ public class OrderController implements OrderServiceApi {
 
   @Override
   @PreAuthorize("isAuthenticated()")
-  public ResponseEntity<OrdersPagedResponse> _getMyOrdersPaged(Integer page, Integer size, String orderBy,
+  public ResponseEntity<OrdersPagedResponse> _getMyOrdersPaged(Integer page, Integer size, String keySearch,
       String status) {
     String username = getCurrentUsername();
     var criteria = OrderPagedCriteria.builder()
         .page(page)
         .size(size)
-        .orderBy(orderBy)
+        .keySearch(keySearch)
         .status(status)
         .build();
     return ResponseEntity.ok(orderService.getMyOrdersPaged(criteria, username));
@@ -76,8 +76,6 @@ public class OrderController implements OrderServiceApi {
     return ResponseEntity.ok(orderService.getMyOrder(orderId, username));
   }
 
-  // Update payment proof for order with PENDING_DEPOSIT status
-  // This endpoint is accessible to authenticated users for their own orders
   @Override
   @PreAuthorize("isAuthenticated()")
   public ResponseEntity<OrderDetailResponse> _updatePaymentProof(Long orderId, UpdatePaymentProofRequest request) {

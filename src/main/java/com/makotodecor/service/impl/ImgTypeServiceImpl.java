@@ -18,7 +18,6 @@ import com.makotodecor.util.QuerydslCriteriaUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -78,7 +77,6 @@ public class ImgTypeServiceImpl implements ImgTypeService {
   @Override
   @Transactional
   public ImgTypeResponse createImgType(CreateImgTypeRequest request) {
-    // Check if code already exists
     if (imgTypeRepository.existsByCode(request.getCode())) {
       throw new WebBadRequestException(ErrorMessage.IMGTYPE_CODE_ALREADY_EXISTS);
     }
@@ -95,7 +93,6 @@ public class ImgTypeServiceImpl implements ImgTypeService {
   public ImgTypeResponse updateImgType(Long imgTypeId, UpdateImgTypeRequest request) {
     ImgType imgType = findImgTypeById(imgTypeId);
 
-    // Check if code already exists for different imgType
     if (request.getCode() != null && !request.getCode().equals(imgType.getCode())) {
       if (imgTypeRepository.existsByCode(request.getCode())) {
         throw new WebBadRequestException(ErrorMessage.IMGTYPE_CODE_ALREADY_EXISTS);
@@ -131,7 +128,6 @@ public class ImgTypeServiceImpl implements ImgTypeService {
   public void deleteImgType(Long imgTypeId) {
     ImgType imgType = findImgTypeById(imgTypeId);
 
-    // Check if imgType has images
     if (imgType.getImgs() != null && !imgType.getImgs().isEmpty()) {
       throw new WebBadRequestException(ErrorMessage.IMGTYPE_HAS_IMAGES);
     }

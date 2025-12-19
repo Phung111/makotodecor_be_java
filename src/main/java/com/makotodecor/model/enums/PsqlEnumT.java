@@ -44,7 +44,6 @@ public abstract class PsqlEnumT<T, E extends Enum<E> & PersistableEnum<T>>
   @Override
   public E nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner)
       throws SQLException {
-    // implement
     final T cellContent = getCellContent(rs, position);
     if (cellContent == null) {
       return null;
@@ -77,12 +76,10 @@ public abstract class PsqlEnumT<T, E extends Enum<E> & PersistableEnum<T>>
   @Override
   public Serializable disassemble(E value) {
     return value; // don't know, but it works. If value.getPersistentValue(),
-                  // findByScmProviderType() fails
   }
 
   @Override
   public E assemble(Serializable cached, Object owner) {
-    // assemble from cache
     if (cached == null) {
       return null;
     }

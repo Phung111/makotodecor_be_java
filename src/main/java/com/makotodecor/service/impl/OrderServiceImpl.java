@@ -30,8 +30,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -56,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
   private static final String ORDER_GROUP_IMG_TYPE_CODE = "ORDER_GROUP";
   private static final String ORDER_ITEM_IMG_TYPE_CODE = "ORDER_ITEM";
 
-  private static final Set<String> ORDER_SORTABLE_COLUMNS = Set.of("id", "status", "createdAt", "updatedAt");
+  private static final Set<String> ORDER_SORTABLE_COLUMNS = Set.of("id", "code", "productCount", "totalQuantity", "status", "updatedAt");
 
   @Override
   @Transactional(readOnly = true)
@@ -73,7 +75,6 @@ public class OrderServiceImpl implements OrderService {
 
     var pageResponse = orderRepository.findAll(predicate, pageable);
 
-    // Eager load orderItems and user to avoid lazy loading issues
     var orders = pageResponse.getContent();
     orders.forEach(order -> {
       if (order.getOrderItems() != null) {
@@ -102,21 +103,17 @@ public class OrderServiceImpl implements OrderService {
   public OrderDetailResponse getOrder(Long orderId) {
     Order order = findOrderById(orderId);
 
-    // Eager load orderGroups, orderItems, product and product images
     if (order.getOrderGroups() != null) {
       order.getOrderGroups().forEach(group -> {
-        // Load orderGroupImages
         if (group.getOrderGroupImages() != null) {
           group.getOrderGroupImages().size();
         }
-        // Load product and its default image
         if (group.getProduct() != null) {
           group.getProduct().getName();
           if (group.getProduct().getImgs() != null) {
             group.getProduct().getImgs().size();
           }
         }
-        // Load orderItems and their variantImages
         if (group.getOrderItems() != null) {
           group.getOrderItems().forEach(item -> {
             if (item.getVariantImages() != null) {
@@ -149,13 +146,11 @@ public class OrderServiceImpl implements OrderService {
   public OrderDetailResponse placeOrder(CreateOrderRequest request, String username) {
     User user = findUserByUsername(username);
 
-    // Fetch image types for ORDER_GROUP and ORDER_ITEM
     ImgType orderGroupImgType = imgTypeRepository.findByCode(ORDER_GROUP_IMG_TYPE_CODE)
         .orElseThrow(() -> new WebBadRequestException(ErrorMessage.ITEM_NOT_FOUND));
     ImgType orderItemImgType = imgTypeRepository.findByCode(ORDER_ITEM_IMG_TYPE_CODE)
         .orElseThrow(() -> new WebBadRequestException(ErrorMessage.ITEM_NOT_FOUND));
 
-    // Create base order
     final Order order = Order.builder()
         .code(generateOrderCode())
         .status(OrderStatusEnum.NEW) // Will be updated based on paymentProof
@@ -192,10 +187,8 @@ public class OrderServiceImpl implements OrderService {
           .build();
       orderGroups.add(group);
 
-      // Save order group first to get ID
       orderGroupRepository.save(group);
 
-      // Create Img entities for orderGroupImages with type ORDER_GROUP
       if (reqGroup.getOrderGroupImages() != null && !reqGroup.getOrderGroupImages().isEmpty()) {
         long priority = 1;
         for (com.makotodecor.model.ImageInfo imgInfo : reqGroup.getOrderGroupImages()) {
@@ -212,7 +205,6 @@ public class OrderServiceImpl implements OrderService {
         }
       }
 
-      // Process order items for this group
       Long groupTotalQuantity = 0L;
       if (reqGroup.getOrderItems() != null) {
         for (com.makotodecor.model.CreateOrderItem reqItem : reqGroup.getOrderItems()) {
@@ -231,10 +223,8 @@ public class OrderServiceImpl implements OrderService {
           orderItems.add(orderItem);
           groupTotalQuantity += itemQuantity;
 
-          // Save order item first to get ID
           orderItemRepository.save(orderItem);
 
-          // Create Img entities for variantImages with type ORDER_ITEM
           if (reqItem.getVariantImages() != null && !reqItem.getVariantImages().isEmpty()) {
             long priority = 1;
             for (com.makotodecor.model.ImageInfo imgInfo : reqItem.getVariantImages()) {
@@ -252,42 +242,32 @@ public class OrderServiceImpl implements OrderService {
           }
         }
       }
-      // Set totalQuantity for this order group
       group.setTotalQuantity(groupTotalQuantity);
       orderGroupRepository.save(group);
     }
 
-    // Save all images
     if (!allImages.isEmpty()) {
       imgRepository.saveAll(allImages);
     }
 
-    // Calculate total from items to avoid trusting client
     Long total = orderItems.stream()
         .map(item -> orderMapper.calculateSubtotal(item))
         .reduce(0L, Long::sum);
     order.setTotalPrice(total);
 
-    // Calculate productCount (number of distinct products/order groups)
     order.setProductCount((long) orderGroups.size());
 
-    // Calculate totalQuantity (sum of all quantities of all order items)
     Long totalQuantity = orderItems.stream()
         .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0L)
         .sum();
     order.setTotalQuantity(totalQuantity);
 
-    // Calculate deposit amount (30% of total)
     Long depositAmount = Math.round(total * 0.3);
     order.setDepositAmount(depositAmount);
 
-    // Calculate remaining amount
     Long remainingAmount = total - depositAmount;
     order.setRemainingAmount(remainingAmount);
 
-    // Set order status based on paymentProof
-    // If paymentProof.url exists, status is DEPOSITED (Đã cọc)
-    // Otherwise, status is PENDING_DEPOSIT (Chưa cọc)
     if (request.getPaymentProof() != null && request.getPaymentProof().getUrl() != null && !request.getPaymentProof().getUrl().isEmpty()) {
       order.setStatus(OrderStatusEnum.DEPOSITED);
     } else {
@@ -311,7 +291,6 @@ public class OrderServiceImpl implements OrderService {
         .of(criteria.getPage(), criteria.getSize())
         .withSort(sortCriteria);
 
-    // Build predicate with user filter
     var criteriaWithUser = OrderPagedCriteria.builder()
         .page(criteria.getPage())
         .size(criteria.getSize())
@@ -325,7 +304,6 @@ public class OrderServiceImpl implements OrderService {
 
     var pageResponse = orderRepository.findAll(predicate, pageable);
 
-    // Eager load orderItems and user to avoid lazy loading issues
     var orders = pageResponse.getContent();
     orders.forEach(order -> {
       if (order.getOrderItems() != null) {
@@ -352,26 +330,21 @@ public class OrderServiceImpl implements OrderService {
     User user = findUserByUsername(username);
     Order order = findOrderById(orderId);
 
-    // Verify the order belongs to the user
     if (!order.getUser().getId().equals(user.getId())) {
       throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
     }
 
-    // Eager load orderGroups, orderItems, product and product images
     if (order.getOrderGroups() != null) {
       order.getOrderGroups().forEach(group -> {
-        // Load orderGroupImages
         if (group.getOrderGroupImages() != null) {
           group.getOrderGroupImages().size();
         }
-        // Load product and its default image
         if (group.getProduct() != null) {
           group.getProduct().getName();
           if (group.getProduct().getImgs() != null) {
             group.getProduct().getImgs().size();
           }
         }
-        // Load orderItems and their variantImages
         if (group.getOrderItems() != null) {
           group.getOrderItems().forEach(item -> {
             if (item.getVariantImages() != null) {
@@ -391,17 +364,14 @@ public class OrderServiceImpl implements OrderService {
     User user = findUserByUsername(username);
     Order order = findOrderById(orderId);
 
-    // Verify the order belongs to the user
     if (!order.getUser().getId().equals(user.getId())) {
       throw new WebBadRequestException(ErrorMessage.ORDER_NOT_FOUND);
     }
 
-    // Check if order status is PENDING_DEPOSIT
     if (order.getStatus() != OrderStatusEnum.PENDING_DEPOSIT) {
       throw new WebBadRequestException(ErrorMessage.ORDER_STATUS_INVALID);
     }
 
-    // Update payment proof
     if (paymentProof != null) {
       order.setPaymentProofUrl(paymentProof.getUrl());
       order.setPaymentProofPublicId(paymentProof.getPublicId());
@@ -409,26 +379,21 @@ public class OrderServiceImpl implements OrderService {
       throw new WebBadRequestException(ErrorMessage.PAYMENT_PROOF_REQUIRED);
     }
 
-    // Change status to DEPOSITED
     order.setStatus(OrderStatusEnum.DEPOSITED);
 
     orderRepository.save(order);
 
-    // Eager load orderGroups, orderItems, product and product images
     if (order.getOrderGroups() != null) {
       order.getOrderGroups().forEach(group -> {
-        // Load orderGroupImages
         if (group.getOrderGroupImages() != null) {
           group.getOrderGroupImages().size();
         }
-        // Load product and its default image
         if (group.getProduct() != null) {
           group.getProduct().getName();
           if (group.getProduct().getImgs() != null) {
             group.getProduct().getImgs().size();
           }
         }
-        // Load orderItems and their variantImages
         if (group.getOrderItems() != null) {
           group.getOrderItems().forEach(item -> {
             if (item.getVariantImages() != null) {
@@ -453,6 +418,24 @@ public class OrderServiceImpl implements OrderService {
   }
 
   private String generateOrderCode() {
+    final int MAX_RETRIES = 10;
+    final Random random = new Random();
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+    
+    for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      String timestamp = ZonedDateTime.now().format(formatter);
+      int randomDigits = random.nextInt(100);
+      String randomPart = String.format("%02d", randomDigits);
+      String code = timestamp + randomPart;
+      
+      if (!orderRepository.existsByCode(code)) {
+        return code;
+      }
+      
+      log.warn("Generated order code already exists, retrying... Attempt: {}/{}", attempt + 1, MAX_RETRIES);
+    }
+    
+    log.error("Failed to generate unique order code after {} attempts, using UUID fallback", MAX_RETRIES);
     return "ORD-" + UUID.randomUUID();
   }
 }

@@ -18,7 +18,6 @@ import com.makotodecor.util.QuerydslCriteriaUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.ZonedDateTime;
 import java.util.Set;
 
 import org.springframework.data.domain.PageRequest;
@@ -69,14 +68,12 @@ public class UserServiceImpl implements UserService {
   public UserDetailResponse updateUser(Long userId, UpdateUserRequest request) {
     User user = findUserById(userId);
 
-    // Check if username already exists for different user
     if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
       if (userRepository.existsByUsername(request.getUsername())) {
         throw new WebBadRequestException(ErrorMessage.AUTH_USERNAME_ALREADY_EXISTS);
       }
     }
 
-    // Check if email already exists for different user
     if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
       if (userRepository.existsByEmail(request.getEmail())) {
         throw new WebBadRequestException(ErrorMessage.AUTH_EMAIL_ALREADY_EXISTS);
@@ -112,7 +109,6 @@ public class UserServiceImpl implements UserService {
   public void deleteUser(Long userId) {
     User user = findUserById(userId);
 
-    // Check if user has orders
     if (user.getOrders() != null && !user.getOrders().isEmpty()) {
       throw new WebBadRequestException(ErrorMessage.USER_HAS_ORDERS);
     }

@@ -188,11 +188,7 @@ paths:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
         - $ref: '#/components/parameters/orderBy'
-        - name: keySearch
-          in: query
-          required: false
-          schema:
-            type: string
+        - $ref: '#/components/parameters/keySearch'
         - name: status
           in: query
           required: false
@@ -1030,18 +1026,13 @@ paths:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
         - $ref: '#/components/parameters/orderBy'
+        - $ref: '#/components/parameters/keySearch'
         - name: status
           in: query
           required: false
           schema:
             type: string
             enum: [NEW, DEPOSITED, CANCELLED, COMPLETED]
-        - name: userId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
       responses:
         '200':
           description: Orders paged retrieved successfully
@@ -3209,6 +3200,9 @@ components:
           type: integer
           format: int64
           description: Order ID
+        code:
+          type: string
+          description: Order code
         status:
           $ref: '#/components/schemas/OrderStatusEnum'
         userId:
@@ -3250,6 +3244,9 @@ components:
           type: integer
           format: int64
           description: Order ID
+        code:
+          type: string
+          description: Order code
         status:
           $ref: '#/components/schemas/OrderStatusEnum'
         user:
@@ -3536,6 +3533,12 @@ components:
           minimum: 1
 
   parameters:
+    keySearch:
+      name: keySearch
+      in: query
+      description: key search
+      schema:
+        type: string
     orderBy:
       name: orderBy
       in: query

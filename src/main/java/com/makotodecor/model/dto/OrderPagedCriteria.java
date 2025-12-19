@@ -13,6 +13,7 @@ public class OrderPagedCriteria {
   private Integer page;
   private Integer size;
   private String orderBy;
+  private String keySearch;
   private String status;
   private Long userId;
 }

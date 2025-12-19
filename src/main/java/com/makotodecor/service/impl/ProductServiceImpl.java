@@ -126,11 +126,9 @@ public class ProductServiceImpl implements ProductService {
       product.setSizes(sizes);
     }
 
-    // Save color images first, then colors (colors reference images)
     List<Color> colors = null;
     if (request.getColors() != null && !request.getColors().isEmpty()) {
       colors = createColorsFromRequest(request.getColors(), product);
-      // Extract and save all images from colors first
       List<Img> colorImages = colors.stream()
           .map(Color::getImg)
           .filter(java.util.Objects::nonNull)
@@ -138,12 +136,10 @@ public class ProductServiceImpl implements ProductService {
       if (!colorImages.isEmpty()) {
         imgRepository.saveAll(colorImages);
       }
-      // Now save colors (with persisted img references)
       colors = colorRepository.saveAll(colors);
       product.setColors(colors);
     }
 
-    // Create and save other images (default, other, detail)
     List<Img> images = new ArrayList<>();
 
     if (request.getDefaultImage() != null) {
@@ -162,13 +158,10 @@ public class ProductServiceImpl implements ProductService {
       }
     }
 
-    // Save other images (default, other, detail) - color images already saved above
     if (!images.isEmpty()) {
       images = imgRepository.saveAll(images);
     }
 
-    // Add color images to the images list (already persisted, just for
-    // product.getImgs())
     if (colors != null && !colors.isEmpty()) {
       List<Img> colorImages = colors.stream()
           .map(Color::getImg)
@@ -207,8 +200,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     if (request.getPrices() != null) {
-      final Product currentProduct = product; // ensure effectively final inside lambdas
-      // Preserve sizes that are still referenced in carts to avoid FK violations
+      final Product currentProduct = product;
       List<Size> existingSizes = sizeRepository.findByProductId(productId);
       Map<String, Size> existingByLabel = new HashMap<>();
       existingSizes.forEach(size -> existingByLabel.put(size.getSize(), size));
@@ -218,11 +210,8 @@ public class ProductServiceImpl implements ProductService {
       request.getPrices().forEach(priceReq -> {
         Size size = existingByLabel.remove(priceReq.getSize());
         if (size == null) {
-          // New size
           sizesToSave.add(productMapper.toSize(priceReq, currentProduct));
         } else {
-          // Update existing size in place to keep references intact
-          // price in request is Double; convert to Long to match entity
           size.setPrice(priceReq.getPrice() != null ? priceReq.getPrice().longValue() : null);
           size.setSize(priceReq.getSize());
           size.setProduct(currentProduct);
@@ -233,7 +222,6 @@ public class ProductServiceImpl implements ProductService {
         }
       });
 
-      // Delete sizes that are no longer present only when not referenced in carts
       if (!existingByLabel.isEmpty()) {
         existingByLabel.values().forEach(size -> {
           if (size.getId() != null && cartItemRepository.existsBySizeId(size.getId())) {
@@ -250,10 +238,8 @@ public class ProductServiceImpl implements ProductService {
       }
     }
 
-    // Handle colors: update in place, avoid deleting colors referenced by carts
     List<Color> colorsToPersist = new ArrayList<>();
     if (request.getColors() != null) {
-      // Map existing colors by name (or id if present). Prefer id when provided.
       List<Color> existingColors = colorRepository.findByProductId(productId);
       Map<Long, Color> existingById = new HashMap<>();
       Map<String, Color> existingByName = new HashMap<>();
@@ -278,7 +264,6 @@ public class ProductServiceImpl implements ProductService {
         if (existing == null) {
           colorsToPersist.add(productMapper.toColor(colorReq, product));
         } else {
-          // Update existing color fields to keep ID (and FK) intact
           existing.setName(colorReq.getName());
           existing.setColor(colorReq.getColorCode());
           existing.setProduct(product);
@@ -286,7 +271,6 @@ public class ProductServiceImpl implements ProductService {
             existing.setIsActive(colorReq.getIsActive());
           }
 
-          // Update or replace color image
           if (colorReq.getImage() != null) {
             Img existingImg = existing.getImg();
             if (existingImg == null) {
@@ -304,7 +288,6 @@ public class ProductServiceImpl implements ProductService {
         }
       });
 
-      // Delete colors that are no longer present only if not referenced by cart items
       if (!existingById.isEmpty()) {
         existingById.values().forEach(color -> {
           if (color.getId() != null && cartItemRepository.existsByColorId(color.getId())) {
@@ -317,7 +300,6 @@ public class ProductServiceImpl implements ProductService {
       }
     }
 
-    // Delete old images for product (non-color images) BEFORE inserting new ones
     List<Img> oldImages = imgRepository.findByProductId(productId);
     if (!oldImages.isEmpty()) {
       List<String> publicIds = oldImages.stream()
@@ -337,7 +319,6 @@ public class ProductServiceImpl implements ProductService {
       imgRepository.deleteByProductId(productId);
     }
 
-    // Persist color images first, then colors
     if (!colorsToPersist.isEmpty()) {
       List<Img> colorImages = colorsToPersist.stream()
           .map(Color::getImg)

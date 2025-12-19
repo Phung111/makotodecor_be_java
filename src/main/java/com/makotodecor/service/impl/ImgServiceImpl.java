@@ -41,7 +41,6 @@ public class ImgServiceImpl implements ImgService {
   @Override
   @Transactional(readOnly = true)
   public ImgsPagedResponse getImgsPaged(ImgPagedCriteria criteria) {
-    // Validate imgTypeId is required
     if (criteria.getImgTypeId() == null) {
       throw new WebBadRequestException(ErrorMessage.IMAGE_TYPE_REQUIRED);
     }
@@ -58,7 +57,6 @@ public class ImgServiceImpl implements ImgService {
 
     var pageResponse = imgRepository.findAll(predicate, pageable);
 
-    // Eager load relationships
     var imgs = pageResponse.getContent();
     imgs.forEach(img -> {
       if (img.getProduct() != null) {
@@ -82,7 +80,6 @@ public class ImgServiceImpl implements ImgService {
   public ImgDetailResponse getImg(Long imgId) {
     Img img = findImgById(imgId);
     
-    // Eager load relationships
     if (img.getProduct() != null) {
       img.getProduct().getName();
     }
@@ -98,14 +95,12 @@ public class ImgServiceImpl implements ImgService {
   public ImgDetailResponse createImg(CreateImgRequest request) {
     Img img = imgMapper.toImg(request);
 
-    // Set imgType
     if (request.getImgTypeId() != null) {
       ImgType imgType = imgTypeRepository.findById(request.getImgTypeId())
           .orElseThrow(() -> new WebBadRequestException(ErrorMessage.IMAGE_TYPE_NOT_FOUND));
       img.setImgType(imgType);
     }
 
-    // Set product if provided
     if (request.getProductId() != null) {
       Product product = productRepository.findById(request.getProductId())
           .orElseThrow(() -> new WebBadRequestException(ErrorMessage.PRODUCT_NOT_FOUND));
@@ -123,14 +118,12 @@ public class ImgServiceImpl implements ImgService {
 
     img = imgMapper.updateImgFromRequest(request, img);
 
-    // Update imgType if provided
     if (request.getImgTypeId() != null) {
       ImgType imgType = imgTypeRepository.findById(request.getImgTypeId())
           .orElseThrow(() -> new WebBadRequestException(ErrorMessage.IMAGE_TYPE_NOT_FOUND));
       img.setImgType(imgType);
     }
 
-    // Update product if provided
     if (request.getProductId() != null) {
       Product product = productRepository.findById(request.getProductId())
           .orElseThrow(() -> new WebBadRequestException(ErrorMessage.PRODUCT_NOT_FOUND));

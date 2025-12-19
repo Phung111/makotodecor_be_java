@@ -19,6 +19,7 @@ public class UserController implements UserServiceApi {
   private final UserService userService;
 
   @Override
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<UsersPagedResponse> _getUsersPaged(Integer page, Integer size, String orderBy,
       String username, String email, String status, String role) {
     var criteria = UserPagedCriteria.builder()
@@ -34,25 +35,26 @@ public class UserController implements UserServiceApi {
   }
 
   @Override
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<UserDetailResponse> _getUser(Long userId) {
     return ResponseEntity.ok(userService.getUser(userId));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<UserDetailResponse> _updateUser(Long userId, UpdateUserRequest request) {
     return ResponseEntity.ok(userService.updateUser(userId, request));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _updateUsersStatus(UpdateUsersStatusRequest request) {
     userService.updateUsersStatus(request);
     return ResponseEntity.ok("Users status updated successfully");
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _deleteUser(Long userId) {
     userService.deleteUser(userId);
     return ResponseEntity.ok("User deleted successfully");

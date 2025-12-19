@@ -18,4 +18,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, QuerydslPre
   })
   java.util.Optional<Order> findById(Long id);
 
+  boolean existsByCode(String code);
+
 }

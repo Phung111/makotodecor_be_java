@@ -6,6 +6,7 @@ import com.makotodecor.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,7 @@ public class FileUploadController implements FileUploadServiceApi {
   private final FileUploadService fileUploadService;
 
   @Override
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<ImageUploadResponse> _uploadImage(MultipartFile file, String folder) {
     log.info("Received upload request for file: {}", file.getOriginalFilename());
 
@@ -27,6 +29,7 @@ public class FileUploadController implements FileUploadServiceApi {
   }
 
   @Override
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<MultipleImageUploadResponse> _uploadMultipleImages(List<MultipartFile> files, String folder) {
     log.info("Received upload request for {} files", files != null ? files.size() : 0);
 

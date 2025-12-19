@@ -73,14 +73,12 @@ public class CategoryServiceImpl implements CategoryService {
   public CategoryDetailResponse createCategory(CreateCategoryRequest request) {
     CategoryValidationUtils.validateCreateCategoryRequest(request);
 
-    // Check if code already exists
     if (categoryRepository.existsByCode(request.getCode())) {
       throw new WebBadRequestException(ErrorMessage.CATEGORY_CODE_ALREADY_EXISTS);
     }
 
     Category category = categoryMapper.toCategory(request);
 
-    // Save image to database before saving category
     if (request.getImg() != null) {
       var img = Img.builder()
           .url(request.getImg().getUrl())
@@ -102,7 +100,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     Category category = findCategoryById(categoryId);
 
-    // Check if code already exists for different category
     if (request.getCode() != null && !request.getCode().equals(category.getCode())
         && categoryRepository.existsByCode(request.getCode())) {
       throw new WebBadRequestException(ErrorMessage.CATEGORY_CODE_ALREADY_EXISTS);
@@ -110,7 +107,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     category = categoryMapper.updateCategoryFromRequest(request, category);
 
-    // Save image to database before saving category
     if (request.getImg() != null) {
       var img = Img.builder()
           .url(request.getImg().getUrl())
@@ -145,7 +141,6 @@ public class CategoryServiceImpl implements CategoryService {
   public void deleteCategory(Long categoryId) {
     Category category = findCategoryById(categoryId);
 
-    // Check if category has products
     if (category.getProducts() != null && !category.getProducts().isEmpty()) {
       throw new WebBadRequestException(ErrorMessage.CATEGORY_HAS_PRODUCTS);
     }

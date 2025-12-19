@@ -83,7 +83,6 @@ public class CartServiceImpl implements CartService {
 
     long itemCount = 0;
     if (cart != null && cart.getCartItems() != null && !cart.getCartItems().isEmpty()) {
-      // Count unique products (distinct productId)
       itemCount = cart.getCartItems().stream()
           .filter(item -> item.getProduct() != null)
           .map(item -> item.getProduct().getId())

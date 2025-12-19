@@ -45,26 +45,26 @@ public class ImgTypeController implements ImgTypeServiceApi {
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<ImgTypeResponse> _createImgType(CreateImgTypeRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(imgTypeService.createImgType(request));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<ImgTypeResponse> _updateImgType(Long imgTypeId, UpdateImgTypeRequest request) {
     return ResponseEntity.ok(imgTypeService.updateImgType(imgTypeId, request));
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _updateImgTypesStatus(UpdateImgTypesStatusRequest request) {
     imgTypeService.updateImgTypesStatus(request);
     return ResponseEntity.ok("Image types status updated successfully");
   }
 
   @Override
-  // @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
   public ResponseEntity<String> _deleteImgType(Long imgTypeId) {
     imgTypeService.deleteImgType(imgTypeId);
     return ResponseEntity.ok("Image type deleted successfully");

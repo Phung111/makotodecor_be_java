@@ -26,7 +26,6 @@ import com.querydsl.core.types.ExpressionUtils;
 public class QuerydslCriteriaUtils {
 
   private QuerydslCriteriaUtils() {
-    // Utility class
   }
 
   public static Optional<Predicate> buildProductSearchPredicate(ProductPagedCriteria criteria) {
@@ -85,13 +84,15 @@ public class QuerydslCriteriaUtils {
     final QOrder qOrder = QOrder.order;
 
     final Stream<Supplier<Optional<Predicate>>> expressions = Stream.of(
-        () -> eqIfNotNull(() -> qOrder.user().id.eq(criteria.getUserId()), criteria.getUserId()),
+      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.code, criteria.getKeySearch()), criteria.getKeySearch()),
+      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().username, criteria.getKeySearch()), criteria.getKeySearch()),
+      () -> eqIfNotNull(() -> containsIgnoreCaseDiacritics(qOrder.user().email, criteria.getKeySearch()), criteria.getKeySearch()),
         () -> eqIfNotNull(
             () -> qOrder.status.eq(com.makotodecor.model.enums.OrderStatusEnum.valueOf(criteria.getStatus())),
             criteria.getStatus()));
     return buildPredicate(expressions);
+    
   }
-
   public static Optional<Predicate> buildImgSearchPredicate(ImgPagedCriteria criteria) {
     final QImg qImg = QImg.img;
 

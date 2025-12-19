@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-// Temporary DTO until ErrorField is generated from yaml
 @lombok.Data
 @lombok.AllArgsConstructor
 class ErrorFieldDTO {
@@ -35,9 +34,6 @@ public class GlobalExceptionHandler {
     log.warn("A detail error occurred", ex);
     HttpStatus status = ex.getHttpStatus() == null ? HttpStatus.INTERNAL_SERVER_ERROR : ex.getHttpStatus();
 
-    // Translate error details if they exist
-    // After maven generate-sources, ErrorField will be generated in model package
-    // For now, we create a simple DTO that matches the yaml schema
     List<ErrorFieldDTO> translatedDetails = null;
     if (ex.hasErrors() && !ex.getDetails().isEmpty()) {
       translatedDetails = ex.getDetails().stream()
@@ -55,16 +51,12 @@ public class GlobalExceptionHandler {
 
     ErrorResponse response = responseBuilder.build();
 
-    // TODO: After running maven generate-sources, ErrorResponse will have details
-    // field
-    // Update to: responseBuilder.details(translatedDetails) and remove this block
     if (translatedDetails != null && response.getClass().getDeclaredFields().length > 2) {
       try {
         java.lang.reflect.Field detailsField = response.getClass().getDeclaredField("details");
         detailsField.setAccessible(true);
         detailsField.set(response, translatedDetails);
       } catch (NoSuchFieldException | IllegalAccessException ignored) {
-        // Details field will be available after maven generate-sources
       }
     }
 

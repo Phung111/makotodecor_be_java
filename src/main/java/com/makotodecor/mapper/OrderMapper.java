@@ -19,7 +19,6 @@ import java.util.List;
 @Mapper(componentModel = "spring", uses = { ProductMapper.class, UserMapper.class })
 public interface OrderMapper {
 
-  // Map Order to OrderItemResponse (for list view)
   @Mapping(target = "status", expression = "java(mapStatusToDto(order.getStatus()))")
   @Mapping(target = "userId", source = "user.id")
   @Mapping(target = "username", source = "user.username")
@@ -29,7 +28,6 @@ public interface OrderMapper {
   @Mapping(target = "totalQuantity", source = "totalQuantity")
   OrderItemResponse toOrderItemResponse(Order order);
 
-  // Map Order to OrderDetailResponse (for detail view)
   @Mapping(target = "status", expression = "java(mapStatusToDto(order.getStatus()))")
   @Mapping(target = "user", source = "order.user")
   @Mapping(target = "shippingInfo", expression = "java(mapShippingInfo(order))")
@@ -39,7 +37,6 @@ public interface OrderMapper {
   @Mapping(target = "total", source = "totalPrice")
   OrderDetailResponse toOrderDetailResponse(Order order);
 
-  // Map OrderGroup to OrderGroupResponse
   @Mapping(target = "id", source = "orderGroup.id")
   @Mapping(target = "productId", source = "orderGroup.product.id")
   @Mapping(target = "productName", source = "orderGroup.productName")
@@ -49,7 +46,6 @@ public interface OrderMapper {
   @Mapping(target = "totalQuantity", source = "orderGroup.totalQuantity")
   OrderGroupResponse toOrderGroupResponse(OrderGroup orderGroup);
 
-  // Map OrderItem to OrderItemDetailResponse
   @Mapping(target = "id", source = "orderItem.id")
   @Mapping(target = "cartItemId", ignore = true)
   @Mapping(target = "sizeId", ignore = true)
@@ -66,7 +62,6 @@ public interface OrderMapper {
   @Mapping(target = "variantImages", expression = "java(mapVariantImages(orderItem.getVariantImages()))")
   OrderItemDetailResponse toOrderItemDetailResponse(OrderItem orderItem);
 
-  // Map shipping info from Order
   default CreateOrderShippingInfo mapShippingInfo(Order order) {
     if (order == null) {
       return null;
@@ -80,7 +75,6 @@ public interface OrderMapper {
     return shippingInfo;
   }
 
-  // Map payment proof from Order
   default ImageInfo mapPaymentProof(Order order) {
     if (order == null || order.getPaymentProofUrl() == null) {
       return null;
@@ -91,7 +85,6 @@ public interface OrderMapper {
     return imageInfo;
   }
 
-  // Map list of OrderGroups
   default List<OrderGroupResponse> mapOrderGroups(List<OrderGroup> orderGroups) {
     if (orderGroups == null) {
       return List.of();
@@ -101,7 +94,6 @@ public interface OrderMapper {
         .toList();
   }
 
-  // Map list of OrderItems
   default List<OrderItemDetailResponse> mapOrderItems(List<OrderItem> orderItems) {
     if (orderItems == null) {
       return List.of();
@@ -111,7 +103,6 @@ public interface OrderMapper {
         .toList();
   }
 
-  // Map product's default image (isDefault = true)
   default ImageInfo mapProductDefaultImage(com.makotodecor.model.entity.Product product) {
     if (product == null || product.getImgs() == null) {
       return null;
@@ -128,7 +119,6 @@ public interface OrderMapper {
         .orElse(null);
   }
 
-  // Map order group images from Img entities
   default List<ImageInfo> mapOrderGroupImages(List<Img> images) {
     if (images == null) {
       return List.of();
@@ -143,7 +133,6 @@ public interface OrderMapper {
         .toList();
   }
 
-  // Map variant images from Img entities
   default List<ImageInfo> mapVariantImages(List<Img> images) {
     if (images == null) {
       return List.of();
@@ -158,7 +147,6 @@ public interface OrderMapper {
         .toList();
   }
 
-  // Calculate final price after discount
   default Long calculateFinalPrice(OrderItem orderItem) {
     if (orderItem == null) {
       return 0L;
@@ -171,7 +159,6 @@ public interface OrderMapper {
     return totalPrice * (100 - discount) / 100;
   }
 
-  // Calculate subtotal for an order item
   default Long calculateSubtotal(OrderItem orderItem) {
     if (orderItem == null) {
       return 0L;
@@ -181,7 +168,6 @@ public interface OrderMapper {
     return finalPrice * quantity;
   }
 
-  // Get product count from order (count distinct products, not order items)
   default Long getProductCount(Order order) {
     if (order == null || order.getOrderGroups() == null) {
       return 0L;
@@ -189,7 +175,6 @@ public interface OrderMapper {
     return (long) order.getOrderGroups().size();
   }
 
-  // Map status enum to DTO enum
   default com.makotodecor.model.OrderStatusEnum mapStatusToDto(
       com.makotodecor.model.enums.OrderStatusEnum status) {
     if (status == null) {

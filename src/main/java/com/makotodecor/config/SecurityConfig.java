@@ -47,30 +47,22 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authz -> authz
-            // === AUTHENTICATION ENDPOINTS ===
             .requestMatchers("/v1/api/auth/**").permitAll()
 
-            // === DEVELOPMENT & MONITORING ===
             .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers("/actuator/**").permitAll()
 
-            // === API DOCUMENTATION ===
             .requestMatchers("/swagger-ui/**").permitAll()
             .requestMatchers("/v3/api-docs/**").permitAll()
             .requestMatchers("/api-docs/**").permitAll()
             .requestMatchers("/swagger-resources/**").permitAll()
             .requestMatchers("/webjars/**").permitAll()
 
-            // === BUSINESS ENDPOINTS ===
             .requestMatchers("GET", "/v1/api/products").permitAll()
             .requestMatchers("GET", "/v1/api/categories").permitAll()
             .requestMatchers("GET", "/v1/api/img-types").permitAll()
             .requestMatchers("/v1/api/files/**").permitAll()
-            // Public: Products list
-            // Product details authorization handled by @PreAuthorize in controller
 
-            // === DEFAULT RULE ===
-            // .anyRequest().authenticated())
             .anyRequest().permitAll())
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint(customAuthenticationEntryPoint)

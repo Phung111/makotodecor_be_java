@@ -16,11 +16,9 @@ public interface OrderService {
 
   OrderDetailResponse placeOrder(CreateOrderRequest request, String username);
 
-  // User-facing endpoints
   OrdersPagedResponse getMyOrdersPaged(OrderPagedCriteria criteria, String username);
 
   OrderDetailResponse getMyOrder(Long orderId, String username);
 
-  // Update payment proof for order with PENDING_DEPOSIT status
   OrderDetailResponse updatePaymentProof(Long orderId, com.makotodecor.model.ImageInfo paymentProof, String username);
 }

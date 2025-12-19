@@ -40,7 +40,6 @@ public interface CartMapper {
           .build();
     }
 
-    // Group cart items by product
     Map<Product, List<CartItem>> groupedByProduct = cart.getCartItems().stream()
         .filter(item -> item.getProduct() != null)
         .collect(Collectors.groupingBy(CartItem::getProduct));
@@ -49,7 +48,6 @@ public interface CartMapper {
         .map(entry -> toCartProductGroupResponse(entry.getKey(), entry.getValue()))
         .toList();
 
-    // Calculate item count as number of unique products (distinct productId)
     Long itemCount = (long) groupedByProduct.size();
 
     return CartResponse.builder()
